@@ -11,15 +11,20 @@
   var POSTER_W = 853;
   var POSTER_H = 1844;
 
-  var stage   = document.getElementById('stage');
-  var patches = document.getElementById('patches');
-  var reveal  = document.getElementById('reveal');
-  var motes   = document.getElementById('motes');
+  var stage    = document.getElementById('stage');
+  var patches  = document.getElementById('patches');
+  var plateBox = document.getElementById('plates');
+  var reveal   = document.getElementById('reveal');
+  var motes    = document.getElementById('motes');
 
   if (!stage) { return; }
 
   var reduceMotion = window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 当て板は WebP（透過あり）のみ。使えない環境では文字を隠さず、背景だけを出す。
+  var canWebp = document.createElement('canvas')
+    .toDataURL('image/webp').indexOf('data:image/webp') === 0;
 
   /* ----------------------------------------------------------
      元画像のどこを動かすか
@@ -57,29 +62,26 @@
   ];
 
   /* ----------------------------------------------------------
-     初回表示で順番に立ち上げるブロック
-     box  : 覆う文字の範囲（元画像のピクセル座標）
-     at   : 幕が上がり始める時刻(秒) / for: かかる時間(秒)
+     初回表示で順番に現れる文字
+
+     box は当て板の画像そのものの範囲（元画像のピクセル座標）。
+     tools/make_assets.py が出力した値をそのまま書いている。
+     at  : 当て板が外れはじめる時刻(秒) / for: かかる時間(秒)
      ---------------------------------------------------------- */
-  var VEILS = [
-    { name: 'adv',    box: [180,  184, 680,  236],  at: 1.15, for: 0.85 }, // THE ADVENTURE
-    { name: 'jp',     box: [ 40,  278, 800,  452],  at: 1.65, for: 1.00 }, // 仙台への冒険
-    { name: 'lead',   box: [108,  508, 746,  562],  at: 2.45, for: 0.80 }, // 60年の軌跡、…
-    { name: 'date',   box: [222,  624, 592,  672],  at: 2.95, for: 0.80 }, // 2026.10.10 — 10.11
-    { name: 'coming', box: [174,  732, 692,  778],  at: 3.45, for: 0.80 }, // A new adventure is coming…
-    { name: 'map',    box: [328,  838, 532,  992],  at: 3.95, for: 1.15 }, // 地図アイコン
-    { name: 'tag',    box: [128, 1622, 722, 1672],  at: 4.75, for: 1.00 }  // まもなく、冒険がはじまる。
+  var PLATES = [
+    { name: 'adv',    box: [136,  140, 724,  280],  at: 1.15, for: 0.85 }, // THE ADVENTURE
+    { name: 'jp',     box: [  0,  234, 844,  496],  at: 1.65, for: 1.00 }, // 仙台への冒険
+    { name: 'lead',   box: [ 64,  464, 790,  606],  at: 2.45, for: 0.80 }, // 60年の軌跡、…
+    { name: 'date',   box: [176,  582, 678,  714],  at: 2.95, for: 0.80 }, // 2027.1.22 — 1.24
+    { name: 'coming', box: [130,  688, 736,  822],  at: 3.45, for: 0.80 }, // A new adventure is coming…
+    { name: 'map',    box: [196,  706, 666, 1126],  at: 3.95, for: 1.30 }, // 地図アイコン
+    { name: 'tag',    box: [ 84, 1578, 766, 1716],  at: 4.75, for: 1.00 }  // まもなく、冒険がはじまる。
   ];
 
   var CURTAIN = { at: 0.15, for: 1.35 };   // 背景画像そのもの
-  var ALIVE_AT = 3.9;                      // 地図と茶々丸が動きはじめる時刻
+  var ALIVE_AT = 4.6;                      // 地図と茶々丸が動きはじめる時刻
   var MOTES_AT = 3.0;                      // 光の粒が漂いはじめる時刻
-  var SETTLE_AT = VEILS[VEILS.length - 1].at + VEILS[VEILS.length - 1].for + 0.35;
-
-  /* 幕のぼかし幅。画面サイズに追従させるため画像幅に対する比で持つ */
-  var FEATHER_RATIO = 0.030;
-  var VEIL_PAD_X = POSTER_W * FEATHER_RATIO * 2.2;   // 横は広めに
-  var VEIL_PAD_Y = POSTER_W * FEATHER_RATIO * 1.35;  // 縦は控えめにして幕どうしを繋げない
+  var SETTLE_AT = PLATES[PLATES.length - 1].at + PLATES[PLATES.length - 1].for + 0.35;
 
   // ---------------------------------------------------------
   // ちいさなヘルパー
@@ -105,11 +107,6 @@
   // ---------------------------------------------------------
   function syncViewport() {
     document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px');
-    var rect = stage.getBoundingClientRect();
-    if (rect.width > 0) {
-      document.documentElement.style.setProperty(
-        '--feather', (rect.width * FEATHER_RATIO).toFixed(2) + 'px');
-    }
   }
 
   syncViewport();
@@ -162,18 +159,16 @@
     curtain.style.animationDelay = CURTAIN.at + 's';
     curtain.style.animationDuration = CURTAIN.for + 's';
 
-    VEILS.forEach(function (spec) {
+    if (!canWebp) { return; }
+
+    PLATES.forEach(function (spec) {
       var el = document.createElement('div');
-      el.className = 'veil veil--' + spec.name;
-      place(el, [
-        spec.box[0] - VEIL_PAD_X,
-        spec.box[1] - VEIL_PAD_Y,
-        spec.box[2] + VEIL_PAD_X,
-        spec.box[3] + VEIL_PAD_Y
-      ]);
+      el.className = 'plate plate--' + spec.name;
+      place(el, spec.box);
+      el.style.backgroundImage = 'url("assets/img/plate/' + spec.name + '.webp")';
       el.style.animationDelay = spec.at + 's';
       el.style.animationDuration = spec.for + 's';
-      reveal.appendChild(el);
+      plateBox.appendChild(el);
     });
   }
 
@@ -262,8 +257,7 @@
     });
   }
 
-  // ポスターの読み込みを待ってから開始する
-  var probe = new Image();
+  // ポスターと当て板がそろってから始める（途中から見えてしまわないように）
   var started = false;
 
   function begin() {
@@ -272,17 +266,26 @@
     run();
   }
 
-  probe.onload = begin;
-  probe.onerror = begin;
-  probe.src = (function () {
-    // CSS 側の image-set と同じ判定。WebP が使えなければ PNG。
-    var canWebp = document.createElement('canvas')
-      .toDataURL('image/webp').indexOf('data:image/webp') === 0;
-    return canWebp ? 'assets/img/teaser.webp' : 'assets/img/teaser.png';
+  (function preload() {
+    var sources = [canWebp ? 'assets/img/teaser.webp' : 'assets/img/teaser.png'];
+    if (canWebp && !reduceMotion) {
+      PLATES.forEach(function (spec) {
+        sources.push('assets/img/plate/' + spec.name + '.webp');
+      });
+    }
+
+    var left = sources.length;
+    sources.forEach(function (src) {
+      var img = new Image();
+      img.onload = img.onerror = function () {
+        if (--left === 0) { begin(); }
+      };
+      img.src = src;
+    });
   }());
 
-  // 念のため、読み込みが極端に遅い場合も 3 秒で始める
-  setTimeout(begin, 3000);
+  // 念のため、読み込みが極端に遅い場合も 3.5 秒で始める
+  setTimeout(begin, 3500);
 
   // ---------------------------------------------------------
   // PWA

@@ -18,10 +18,12 @@
   /* 画面高さ。iOS のアドレスバー対策で JS からも上書きする */
   --app-h: 100vh;
 
-  /* 幕のぼかし幅。JS がステージ幅に追従して上書きする */
-  --feather: 12px;
-
   --ink: #0a0806;
+
+  /* ヘッダー */
+  --bar-red: #e60012;
+  --bar-h: 52px;
+  --bar-top: env(safe-area-inset-top, 0px);
 }
 
 @supports (background-image: image-set(url("../img/teaser.webp") type("image/webp"))) {
@@ -99,12 +101,43 @@ body {
 }
 
 /* ------------------------------------------------------------
+   赤いヘッダー
+   ------------------------------------------------------------ */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--bar-h) + var(--bar-top));
+  padding-top: var(--bar-top);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bar-red);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  z-index: 10;
+}
+
+.topbar__title {
+  margin: 0;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Kaku Gothic ProN",
+               "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: clamp(18px, 5.2vw, 23px);
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  line-height: 1;
+  user-select: none;
+}
+
+/* ------------------------------------------------------------
    ステージ（＝ポスター）
-   縦横比を保ったまま、画面内で最大サイズになるよう配置する。
+   ヘッダーの下に、縦横比を保ったまま最大サイズで収める。
    ------------------------------------------------------------ */
 .viewport {
   position: fixed;
   inset: 0;
+  padding-top: calc(var(--bar-h) + var(--bar-top));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -112,9 +145,10 @@ body {
 }
 
 .stage {
+  --free-h: calc(var(--app-h) - var(--bar-h) - var(--bar-top));
   position: relative;
-  width: min(100vw, calc(var(--app-h) * var(--poster-ratio)));
-  height: min(calc(100vw / var(--poster-ratio)), var(--app-h));
+  width: min(100vw, calc(var(--free-h) * var(--poster-ratio)));
+  height: min(calc(100vw / var(--poster-ratio)), var(--free-h));
   overflow: hidden;
   isolation: isolate;            /* mix-blend-mode を外に漏らさない */
   contain: layout paint;
@@ -441,12 +475,15 @@ body {
 
 /* ============================================================
    初回表示の順次フェードイン
-   画面全体を一度覆い、ブロックごとに順番に幕を上げていく。
-   演出が終わると opacity: 0 になり、元画像が完全な状態で残る。
+
+   文字を暗幕で隠すのではなく、「文字を消した状態の絵」を重ねておき、
+   それを順番に外していく。だから黒いもやは一切出ない。
+   演出が終わると当て板は完全に消え、元の絵がそのまま残る。
    ============================================================ */
 .reveal { z-index: 5; }
 
-/* 最初の一枚を隠す暗幕。JS が動かない環境では最初から透明にしておく */
+/* 最初の一枚が浮かび上がるまでの暗幕。
+   JS が動かない環境では最初から透明にしておく。 */
 .curtain {
   position: absolute;
   inset: 0;
@@ -456,45 +493,40 @@ body {
 
 .js .curtain { opacity: 1; }
 
-/* 幕。角丸＋ぼかし＋外側のにじみで、板ではなく「影のたまり」に見せる */
-.veil {
-  position: absolute;
-  background: var(--ink);
-  border-radius: 999px;
-  filter: blur(var(--feather));
-  box-shadow: 0 0 calc(var(--feather) * 3.4) calc(var(--feather) * 0.9) rgba(10, 8, 6, 0.62);
-  opacity: 1;
-}
-
-/* 地図アイコンのまわりは、より広くゆるやかに暗くしておく */
-.veil--map {
-  background: rgba(14, 10, 7, 0.985);
-  box-shadow: 0 0 calc(var(--feather) * 4.2) calc(var(--feather) * 1.15) rgba(10, 8, 6, 0.68);
-}
-
-.is-revealing .curtain,
-.is-revealing .veil {
-  /* 開始時刻と長さは JS が一つずつ指定する */
+.is-revealing .curtain {
+  animation-name: lift-curtain;
   animation-timing-function: cubic-bezier(.33, 0, .2, 1);
   animation-fill-mode: forwards;
 }
-
-.is-revealing .curtain { animation-name: lift-curtain; }
-.is-revealing .veil    { animation-name: lift-veil; }
 
 @keyframes lift-curtain {
   from { opacity: 1; }
   to   { opacity: 0; }
 }
 
-/* 幕は消えると同時にわずかに広がり、影が散っていくように見せる */
-@keyframes lift-veil {
-  from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: scale(1.07); }
+/* 文字が無い状態の当て板。位置と大きさは JS が指定する */
+.plate {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  opacity: 1;
+  will-change: opacity;
+}
+
+.is-revealing .plate {
+  animation-name: lift-plate;
+  animation-timing-function: cubic-bezier(.4, 0, .3, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes lift-plate {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 /* 演出をすでに終えた（または省略した）状態 */
-.is-settled .reveal { display: none; }
+.is-settled .reveal,
+.is-settled .plates { display: none; }
 
 /* ------------------------------------------------------------
    動きを減らす設定のときは、完成した一枚絵として静かに表示する
@@ -515,5 +547,6 @@ body {
   .sunlight__bloom { opacity: 0.7; }
   .sunlight__rays  { opacity: 0.45; }
   .motes { display: none; }
-  .reveal { display: none; }
+  .reveal,
+  .plates { display: none; }
 }

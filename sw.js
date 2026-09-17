@@ -1,7 +1,7 @@
 /* 仙台への冒険 ティザー ─ オフラインでも起動画面として成立させるための最小構成 */
 'use strict';
 
-var CACHE = 'sendai-teaser-v1';
+var CACHE = 'sendai-teaser-v2';
 
 var ASSETS = [
   './',
@@ -12,6 +12,13 @@ var ASSETS = [
   './assets/img/teaser.webp',
   './assets/img/teaser.png',
   './assets/img/clouds.png',
+  './assets/img/plate/adv.webp',
+  './assets/img/plate/jp.webp',
+  './assets/img/plate/lead.webp',
+  './assets/img/plate/date.webp',
+  './assets/img/plate/coming.webp',
+  './assets/img/plate/map.webp',
+  './assets/img/plate/tag.webp',
   './assets/img/icon-192.png',
   './assets/img/icon-512.png',
   './assets/img/apple-touch-icon.png',

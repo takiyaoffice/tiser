@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <title>仙台への冒険 ｜ まもなく、冒険がはじまる。</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="description" content="60年の軌跡、ここから新たな冒険へ。2026.10.10 — 10.11 仙台への冒険。まもなく、冒険がはじまる。">
-<meta name="theme-color" content="#0a0806">
+<meta name="description" content="60年の軌跡、ここから新たな冒険へ。2027.1.22 — 1.24 仙台への冒険。まもなく、冒険がはじまる。">
+<meta name="theme-color" content="#e60012">
 <meta name="color-scheme" content="dark">
 
 <!-- iOS ホーム画面 / PWA -->
@@ -32,7 +32,7 @@
 <!-- OGP -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="仙台への冒険">
-<meta property="og:description" content="60年の軌跡、ここから新たな冒険へ。2026.10.10 — 10.11">
+<meta property="og:description" content="60年の軌跡、ここから新たな冒険へ。2027.1.22 — 1.24">
 <meta property="og:image" content="assets/img/teaser.png">
 
 <link rel="preload" as="image" href="assets/img/teaser.webp" type="image/webp" fetchpriority="high">
@@ -46,14 +46,22 @@
 <!-- 画面読み込み前でも真っ黒にならないようにする下地 -->
 <div class="backdrop" aria-hidden="true"></div>
 
+<header class="topbar">
+  <span class="topbar__title">Takutendo</span>
+</header>
+
 <main class="viewport" id="viewport">
-  <h1 class="sr-only">仙台への冒険 ─ 60年の軌跡、ここから新たな冒険へ。2026.10.10 — 10.11　まもなく、冒険がはじまる。</h1>
+  <h1 class="sr-only">仙台への冒険 ─ 60年の軌跡、ここから新たな冒険へ。2027.1.22 — 1.24　まもなく、冒険がはじまる。</h1>
 
   <!-- ポスター本体。すべてのエフェクトはこの中に % 座標で配置される -->
   <div class="stage" id="stage" role="img"
        aria-label="夕暮れの谷を見下ろす崖の上に立つ二人の旅人と猫の茶々丸。ティザービジュアル。">
 
     <div class="stage__poster" aria-hidden="true"></div>
+
+    <!-- 文字が現れる前の「文字が無い状態」の当て板（JS が生成）。
+         ポスターのすぐ上に置くので、霧や光は隠れている間も同じようにかかる。 -->
+    <div class="layer plates" id="plates" aria-hidden="true"></div>
 
     <!-- 猫の尻尾・耳・草花（元画像の一部をそのまま動かすレイヤー。JS が生成） -->
     <div class="layer layer--patches" id="patches" aria-hidden="true"></div>
@@ -88,7 +96,7 @@
     <!-- 漂う光の粒（JS が少量ずつ生成） -->
     <div class="layer motes" id="motes" aria-hidden="true"></div>
 
-    <!-- 初回表示の順次フェードイン用スクリーン（JS が生成） -->
+    <!-- 最初の一枚が浮かび上がるまでの暗幕 -->
     <div class="layer reveal" id="reveal" aria-hidden="true">
       <div class="curtain"></div>
     </div>

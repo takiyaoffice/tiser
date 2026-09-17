@@ -1,0 +1,519 @@
+@charset "UTF-8";
+/* ============================================================
+   仙台への冒険 ─ ティザーTOP画面
+   「動画」ではなく「動くポスター」。
+   元のポスター画像は一切加工せず、その上に極めて薄い動きだけを重ねる。
+   座標はすべて元画像 853 x 1844 に対する % で指定している。
+   ============================================================ */
+
+:root {
+  /* ポスター本体。WebP が使える環境では WebP、それ以外は PNG。
+     すべてのレイヤーが同じ変数を使うので、常に同一の画像が重なる。 */
+  --poster: url("../img/teaser.png");
+
+  --poster-w: 853;
+  --poster-h: 1844;
+  --poster-ratio: 0.4625813; /* 853 / 1844 */
+
+  /* 画面高さ。iOS のアドレスバー対策で JS からも上書きする */
+  --app-h: 100vh;
+
+  /* 幕のぼかし幅。JS がステージ幅に追従して上書きする */
+  --feather: 12px;
+
+  --ink: #0a0806;
+}
+
+@supports (background-image: image-set(url("../img/teaser.webp") type("image/webp"))) {
+  :root {
+    --poster: image-set(
+      url("../img/teaser.webp") type("image/webp"),
+      url("../img/teaser.png") type("image/png")
+    );
+  }
+}
+
+@supports (height: 100dvh) {
+  :root { --app-h: 100dvh; }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;              /* スクロール不要 */
+  background: var(--ink);
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  color: #e9dcc2;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------
+   画面いっぱいの下地。
+   端末比率がポスターと違うときだけ、ぼかした同じ絵で余白を埋める。
+   ------------------------------------------------------------ */
+.backdrop {
+  position: fixed;
+  inset: -6%;
+  background-image: var(--poster);
+  background-size: cover;
+  background-position: center;
+  filter: blur(42px) brightness(0.38) saturate(0.75);
+  transform: scale(1.08);
+  z-index: 0;
+}
+/* 下地もポスターと一緒に浮かび上がらせる */
+.js .backdrop { opacity: 0; }
+.is-revealing .backdrop { animation: fade-in 1.5s ease-out 0.2s forwards; }
+.is-settled .backdrop { opacity: 1; animation: none; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 45%, rgba(10, 8, 6, 0.35), rgba(6, 5, 4, 0.92) 78%);
+}
+
+/* ------------------------------------------------------------
+   ステージ（＝ポスター）
+   縦横比を保ったまま、画面内で最大サイズになるよう配置する。
+   ------------------------------------------------------------ */
+.viewport {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.stage {
+  position: relative;
+  width: min(100vw, calc(var(--app-h) * var(--poster-ratio)));
+  height: min(calc(100vw / var(--poster-ratio)), var(--app-h));
+  overflow: hidden;
+  isolation: isolate;            /* mix-blend-mode を外に漏らさない */
+  contain: layout paint;
+  background: var(--ink);
+}
+
+.stage__poster,
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.stage__poster {
+  background-image: var(--poster);
+  background-size: 100% 100%;    /* ステージ＝画像比率なので歪まない */
+  background-repeat: no-repeat;
+}
+
+/* ============================================================
+   1. 空・雲　─ 10〜20秒では一周しないほどゆっくり流す
+   文字や山の上を通るため、極端に薄く（soft-light）重ねる。
+   ============================================================ */
+/* 文字が並ぶ帯（10%〜40%）では思いきり薄くし、
+   もともと雲が見えている上端と、夕日側の明るい帯で動きを見せる。 */
+.sky {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom,
+      transparent 2.5%, rgba(0,0,0,.62) 7%, rgba(0,0,0,.52) 11%,
+      rgba(0,0,0,.20) 15%, rgba(0,0,0,.20) 42.6%,
+      rgba(0,0,0,.75) 44.5%, #000 46%, transparent 50%);
+          mask-image: linear-gradient(to bottom,
+      transparent 2.5%, rgba(0,0,0,.62) 7%, rgba(0,0,0,.52) 11%,
+      rgba(0,0,0,.20) 15%, rgba(0,0,0,.20) 42.6%,
+      rgba(0,0,0,.75) 44.5%, #000 46%, transparent 50%);
+}
+
+/* 金の額縁にはかからないようにする（雲は動くので、内側の箱で切り取る） */
+.sky__field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0 3.4%, #000 7.5%, #000 92.5%, transparent 96.6%);
+          mask-image: linear-gradient(to right, transparent 0 3.4%, #000 7.5%, #000 92.5%, transparent 96.6%);
+}
+
+.sky__clouds {
+  position: absolute;
+  background-image: url("../img/clouds.png");
+  background-repeat: repeat;      /* 縦横ともタイルが繋がるテクスチャ */
+  mix-blend-mode: soft-light;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* 奥の雲：大きく、いっそうゆっくり */
+.sky__clouds--far {
+  left: -50%;
+  top: 1%;
+  width: 200%;
+  height: 49%;
+  background-size: 50% auto;
+  background-position: 0 12%;
+  opacity: 0.085;
+  /* 横に流れる動きと、10〜20秒周期の濃淡の呼吸を重ねる */
+  animation:
+    cloud-drift-far 140s linear infinite,
+    cloud-breath-far 19s ease-in-out infinite;
+}
+
+/* 手前の雲：やや速く、細かい */
+.sky__clouds--near {
+  left: -100%;
+  top: 3%;
+  width: 300%;
+  height: 47%;
+  background-size: 33.3333% auto;
+  background-position: 0 47%;
+  opacity: 0.125;
+  animation:
+    cloud-drift-near 72s linear infinite,
+    cloud-breath-near 14s ease-in-out infinite -6s;
+}
+
+/* 濃さそのものを直接指定する（掛け算ではないので実値で書く） */
+@keyframes cloud-breath-far {
+  0%, 100% { opacity: 0.062; }
+  50%      { opacity: 0.098; }
+}
+@keyframes cloud-breath-near {
+  0%, 100% { opacity: 0.092; }
+  50%      { opacity: 0.142; }
+}
+
+@keyframes cloud-drift-far {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }      /* ちょうどタイル1枚分 */
+}
+@keyframes cloud-drift-near {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-33.3333%, 0, 0); } /* ちょうどタイル1枚分 */
+}
+
+/* ============================================================
+   6. 霧・大気　─ 谷筋にだけ、ごく薄い層を流す
+   ============================================================ */
+.fog {
+  mix-blend-mode: screen;
+  /* 金の額縁にはかからないようにする */
+  -webkit-mask-image: linear-gradient(to right, transparent 0 3.4%, #000 7.5%, #000 92.5%, transparent 96.6%);
+          mask-image: linear-gradient(to right, transparent 0 3.4%, #000 7.5%, #000 92.5%, transparent 96.6%);
+}
+
+.fog__band {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(14px);
+  will-change: transform, opacity;
+}
+
+.fog__band--1 {
+  left: -26%; top: 55.5%; width: 86%; height: 4.6%;
+  background: radial-gradient(closest-side, rgba(255, 228, 190, 0.085), transparent 72%);
+  animation: fog-a 118s linear infinite, fog-breath 37s ease-in-out infinite;
+}
+.fog__band--2 {
+  left: 18%; top: 61.5%; width: 104%; height: 5.4%;
+  background: radial-gradient(closest-side, rgba(238, 224, 205, 0.07), transparent 74%);
+  animation: fog-b 163s linear infinite, fog-breath 46s ease-in-out infinite -12s;
+}
+.fog__band--3 {
+  left: -14%; top: 67.5%; width: 78%; height: 4.2%;
+  background: radial-gradient(closest-side, rgba(255, 216, 170, 0.055), transparent 70%);
+  animation: fog-a 201s linear infinite -60s, fog-breath 53s ease-in-out infinite -25s;
+}
+
+@keyframes fog-a {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(74%, -1.1%, 0); }
+}
+@keyframes fog-b {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-88%, 0.9%, 0); }
+}
+@keyframes fog-breath {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1; }
+}
+
+/* ============================================================
+   7. 光の差し込み　─ 夕日（右 92% / 上 50.5%）から、ごく薄く
+   ============================================================ */
+.sunlight {
+  mix-blend-mode: screen;
+  /* 金の額縁にはかからないようにする */
+  -webkit-mask-image: linear-gradient(to right, transparent 0 3.4%, #000 7.5%, #000 92.5%, transparent 96.6%);
+          mask-image: linear-gradient(to right, transparent 0 3.4%, #000 7.5%, #000 92.5%, transparent 96.6%);
+}
+
+.sunlight__bloom,
+.sunlight__rays {
+  position: absolute;
+  display: block;
+  will-change: opacity;
+}
+
+/* 夕日（92% / 50.5%）そのもののにじみ */
+.sunlight__bloom {
+  left: 68.7%; top: 40.1%; width: 46%; height: 20.8%;
+  background: radial-gradient(closest-side,
+      rgba(255, 206, 136, 0.19), rgba(255, 176, 96, 0.07) 42%, transparent 74%);
+  animation: sun-breath 21s ease-in-out infinite;
+}
+
+/* 夕日から谷へ、横に広がる光条。文字にかからない高さに収める */
+.sunlight__rays {
+  inset: 0;
+  background: repeating-conic-gradient(from 168deg at 91.7% 50.5%,
+      transparent 0deg 2.4deg,
+      rgba(255, 219, 164, 0.075) 2.4deg 3.5deg,
+      transparent 3.5deg 7.2deg);
+  -webkit-mask-image: radial-gradient(49% 7.9% at 91.7% 50.5%, #000 8%, rgba(0,0,0,.5) 46%, transparent 86%);
+          mask-image: radial-gradient(49% 7.9% at 91.7% 50.5%, #000 8%, rgba(0,0,0,.5) 46%, transparent 86%);
+  filter: blur(2px);
+  animation: ray-breath 29s ease-in-out infinite;
+}
+
+@keyframes sun-breath {
+  0%, 100% { opacity: 0.40; }
+  48%      { opacity: 1; }
+}
+@keyframes ray-breath {
+  0%, 100% { opacity: 0.22; }
+  44%      { opacity: 0.85; }
+}
+
+/* ============================================================
+   3. 地図アイコン　─ 呼吸するような、非常にゆっくりした明滅
+   「暗い → 少し光る → 暗い」。この画面の主役の演出。
+   ============================================================ */
+.mapglow { mix-blend-mode: screen; }
+
+.mapglow__sheen,
+.mapglow__halo {
+  position: absolute;
+  display: block;
+  opacity: 0;
+  will-change: opacity;
+}
+
+/* 元画像の地図部分をそのまま screen で重ね、金の線だけを光らせる */
+.mapglow__sheen {
+  left: 36%; top: 43.6%; width: 29%; height: 11.8%;
+  background-image: var(--poster);
+  background-size: 344.83% 847.46%;   /* = 100 / 0.29, 100 / 0.118 */
+  background-position: 50.70% 49.43%; /* = 0.36/(1-0.29), 0.436/(1-0.118) */
+  background-repeat: no-repeat;
+  -webkit-mask-image: radial-gradient(closest-side, #000 0 52%, transparent 96%);
+          mask-image: radial-gradient(closest-side, #000 0 52%, transparent 96%);
+}
+
+/* ピン周辺のほのかな光だまり */
+.mapglow__halo {
+  left: 48.4%; top: 44.6%; width: 17%; height: 8%;
+  background: radial-gradient(closest-side,
+      rgba(255, 212, 140, 0.30), rgba(255, 178, 92, 0.10) 46%, transparent 74%);
+  filter: blur(3px);
+}
+
+.is-alive .mapglow__sheen { animation: map-breath-sheen 7.6s ease-in-out infinite; }
+.is-alive .mapglow__halo  { animation: map-breath-halo  7.6s ease-in-out infinite; }
+
+/* 金の線だけがゆっくり浮かび上がる */
+@keyframes map-breath-sheen {
+  0%, 100% { opacity: 0.03; }
+  46%      { opacity: 0.72; }
+}
+/* まわりの光だまりは、さらに控えめに */
+@keyframes map-breath-halo {
+  0%, 100% { opacity: 0.02; }
+  46%      { opacity: 0.46; }
+}
+
+/* ============================================================
+   4 & 5. 茶々丸（尻尾・耳）と、足元の草花
+   元画像の該当部分を同じ位置に重ね、ごく僅かに回転／傾ける。
+   静止時は元画像と完全に一致するため、何も起きていないように見える。
+   位置と背景の計算は JS 側（REGIONS）で行う。
+   ============================================================ */
+.patch {
+  position: absolute;
+  background-image: var(--poster);
+  background-repeat: no-repeat;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-mask-image: radial-gradient(closest-side, #000 0 var(--plateau, 58%), transparent 100%);
+          mask-image: radial-gradient(closest-side, #000 0 var(--plateau, 58%), transparent 100%);
+}
+
+/* 尻尾：付け根を軸に、ゆっくり左右に */
+.is-alive .patch--tail {
+  animation: tail-sway 9.5s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+@keyframes tail-sway {
+  0%   { transform: rotate(0deg); }
+  22%  { transform: rotate(2.6deg); }
+  38%  { transform: rotate(1.4deg); }
+  62%  { transform: rotate(-2.2deg); }
+  80%  { transform: rotate(-0.6deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* 耳：ふだんは動かず、ときどき小さく動く */
+.is-alive .patch--ears {
+  animation: ear-twitch 13s ease-in-out infinite;
+}
+@keyframes ear-twitch {
+  0%, 26%      { transform: rotate(0deg); }
+  28.5%        { transform: rotate(-1.9deg); }
+  31%          { transform: rotate(0.5deg); }
+  33.5%        { transform: rotate(0deg); }
+  70%          { transform: rotate(0deg); }
+  72%          { transform: rotate(1.6deg); }
+  74.5%        { transform: rotate(-0.4deg); }
+  77%, 100%    { transform: rotate(0deg); }
+}
+
+/* 草花：ごく弱い風。--amp で場所ごとに強さを変える */
+.is-alive .patch--grass {
+  animation: grass-wind 11s ease-in-out infinite;
+}
+@keyframes grass-wind {
+  0%, 100% { transform: skewX(0deg); }
+  30%      { transform: skewX(calc(-1.25deg * var(--amp, 1))); }
+  55%      { transform: skewX(calc(0.35deg * var(--amp, 1))); }
+  78%      { transform: skewX(calc(-0.7deg * var(--amp, 1))); }
+}
+
+/* ============================================================
+   2. 光の粒　─ 数秒に一度だけ、少数。上品に。
+   ============================================================ */
+.motes { mix-blend-mode: screen; }
+
+.mote {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+      rgba(255, 244, 214, 0.95) 0%, rgba(255, 206, 134, 0.42) 38%, transparent 70%);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation-name: mote-float;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes mote-float {
+  0%   { opacity: 0; transform: translate3d(0, 0, 0) scale(0.7); }
+  18%  { opacity: var(--peak, 0.5); }
+  50%  { transform: translate3d(var(--dx, 6px), calc(var(--dy, -40px) * 0.5), 0) scale(1); }
+  74%  { opacity: var(--peak, 0.5); }
+  100% { opacity: 0; transform: translate3d(calc(var(--dx, 6px) * 1.6), var(--dy, -40px), 0) scale(0.85); }
+}
+
+/* ============================================================
+   初回表示の順次フェードイン
+   画面全体を一度覆い、ブロックごとに順番に幕を上げていく。
+   演出が終わると opacity: 0 になり、元画像が完全な状態で残る。
+   ============================================================ */
+.reveal { z-index: 5; }
+
+/* 最初の一枚を隠す暗幕。JS が動かない環境では最初から透明にしておく */
+.curtain {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  opacity: 0;
+}
+
+.js .curtain { opacity: 1; }
+
+/* 幕。角丸＋ぼかし＋外側のにじみで、板ではなく「影のたまり」に見せる */
+.veil {
+  position: absolute;
+  background: var(--ink);
+  border-radius: 999px;
+  filter: blur(var(--feather));
+  box-shadow: 0 0 calc(var(--feather) * 3.4) calc(var(--feather) * 0.9) rgba(10, 8, 6, 0.62);
+  opacity: 1;
+}
+
+/* 地図アイコンのまわりは、より広くゆるやかに暗くしておく */
+.veil--map {
+  background: rgba(14, 10, 7, 0.985);
+  box-shadow: 0 0 calc(var(--feather) * 4.2) calc(var(--feather) * 1.15) rgba(10, 8, 6, 0.68);
+}
+
+.is-revealing .curtain,
+.is-revealing .veil {
+  /* 開始時刻と長さは JS が一つずつ指定する */
+  animation-timing-function: cubic-bezier(.33, 0, .2, 1);
+  animation-fill-mode: forwards;
+}
+
+.is-revealing .curtain { animation-name: lift-curtain; }
+.is-revealing .veil    { animation-name: lift-veil; }
+
+@keyframes lift-curtain {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* 幕は消えると同時にわずかに広がり、影が散っていくように見せる */
+@keyframes lift-veil {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.07); }
+}
+
+/* 演出をすでに終えた（または省略した）状態 */
+.is-settled .reveal { display: none; }
+
+/* ------------------------------------------------------------
+   動きを減らす設定のときは、完成した一枚絵として静かに表示する
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .sky__clouds,
+  .fog__band,
+  .sunlight__bloom,
+  .sunlight__rays,
+  .patch,
+  .mote,
+  .is-alive .mapglow__sheen,
+  .is-alive .mapglow__halo {
+    animation: none !important;
+  }
+  .mapglow__sheen { opacity: 0.22; }
+  .mapglow__halo  { opacity: 0.34; }
+  .sunlight__bloom { opacity: 0.7; }
+  .sunlight__rays  { opacity: 0.45; }
+  .motes { display: none; }
+  .reveal { display: none; }
+}

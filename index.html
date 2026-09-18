@@ -49,6 +49,12 @@
 <main class="viewport">
   <h1 class="sr-only">FUTURE FANTASY ─未来の地図─　60年の軌跡、ここから新たな冒険へ。─舞台は仙台。2027.1.22-24　A new adventure is coming…</h1>
 
+  <!-- 1. 黒画面の中央に置かれ、霧のように消える 60TH -->
+  <div class="herald" id="herald" aria-hidden="true">
+    <div class="herald__glow"></div>
+    <img class="herald__img" src="assets/img/hero/crest.webp" alt="" decoding="async">
+  </div>
+
   <!-- 完成形と同じ縦横比の枠。中の配置はすべて % 指定 -->
   <div class="stage" id="stage">
 
@@ -87,12 +93,6 @@
     <span class="rule rule--2 el" data-step="rule2" aria-hidden="true"></span>
 
     <img class="coming el" data-step="coming" src="assets/img/hero/coming.webp" alt="" decoding="async" aria-hidden="true">
-
-    <span class="chevron el" data-step="chev" aria-hidden="true">
-      <svg viewBox="0 0 64 40" aria-hidden="true">
-        <path d="M6 4 L32 30 L58 4 L58 14 L32 40 L6 14 Z" />
-      </svg>
-    </span>
   </div>
 </main>
 

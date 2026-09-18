@@ -57,19 +57,35 @@ html, body {
 .viewport {
   position: fixed;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
   z-index: 1;
 }
 
+/* 画面の幅いっぱいに置く。縦は絵の比率のまま伸び、
+   はみ出した分は下から切れる（文字は必ず全部入る） */
 .stage {
-  position: relative;
-  width: min(100vw, calc(var(--app-h) * var(--ratio)));
-  height: min(calc(100vw / var(--ratio)), var(--app-h));
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: calc(100vw / var(--ratio));
   overflow: hidden;
   isolation: isolate;
   background: var(--ink);
+}
+
+/* 横長の画面（タブレットや PC）では、絵の全体が入るように収める */
+@media (min-aspect-ratio: 5/8) {
+  .viewport {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stage {
+    position: relative;
+    width: min(100vw, calc(var(--app-h) * var(--ratio)));
+    height: min(calc(100vw / var(--ratio)), var(--app-h));
+  }
 }
 
 /* ============================================================
@@ -94,7 +110,7 @@ html, body {
 .scene__img {
   background: url("../img/hero/scene.webp") center / 100% 100% no-repeat;
   will-change: transform;
-  animation: scene-drift 54s ease-in-out infinite alternate;
+  animation: scene-drift 72s ease-in-out infinite alternate;
 }
 
 @keyframes scene-drift {
@@ -110,7 +126,7 @@ html, body {
   opacity: 0.16;
   -webkit-mask-image: linear-gradient(to bottom, #000 0 38%, rgba(0,0,0,.45) 50%, transparent 60%);
           mask-image: linear-gradient(to bottom, #000 0 38%, rgba(0,0,0,.45) 50%, transparent 60%);
-  animation: sky-drift 150s linear infinite;
+  animation: sky-drift 200s linear infinite;
 }
 
 @keyframes sky-drift {
@@ -123,7 +139,7 @@ html, body {
   background: radial-gradient(22% 9% at 93.5% 60.5%,
       rgba(255, 214, 148, 0.26), rgba(255, 176, 92, 0.10) 45%, transparent 76%);
   mix-blend-mode: screen;
-  animation: sun-breath 17s ease-in-out infinite;
+  animation: sun-breath 23s ease-in-out infinite;
 }
 
 @keyframes sun-breath {
@@ -146,7 +162,7 @@ html, body {
 /* ============================================================
    置かれる要素。位置と大きさは完成形の実測値
    ============================================================ */
-.crest, .logo, .lead, .date, .coming, .chevron, .rule {
+.crest, .logo, .lead, .date, .coming, .rule {
   position: absolute;
   z-index: 4;
 }
@@ -161,7 +177,6 @@ html, body {
 .rule--1     { top: 45.28%; }
 .rule--2     { top: 52.60%; }
 
-.chevron { left: 45.66%; top: 57.37%; width: 8.68%; }
 
 /* 枠いっぱいに敷く画像 */
 .crest__img,
@@ -194,7 +209,7 @@ html, body {
   inset: -34%;
   background: radial-gradient(closest-side,
       rgba(255, 226, 150, 0.30), rgba(190, 150, 70, 0.10) 45%, transparent 72%);
-  animation: crest-breath 6.5s ease-in-out infinite;
+  animation: crest-breath 9s ease-in-out infinite;
   pointer-events: none;
 }
 
@@ -251,20 +266,56 @@ html, body {
   box-shadow: 0 0 6px rgba(240, 214, 156, 0.5);
 }
 
-/* 下向きの山形。スクロールを促す印 */
-.chevron svg {
+/* ============================================================
+   最初の黒画面。中央の 60TH が、霧のようにほどけて消える
+   ============================================================ */
+.herald {
+  position: fixed;
+  left: 50%;
+  top: 44%;
+  width: min(52vw, 32vh);
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.herald__img {
   display: block;
   width: 100%;
   height: auto;
-  fill: rgba(236, 222, 196, 0.82);
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
 }
 
-.is-settled .chevron { animation: chev-bob 2.6s ease-in-out infinite; }
+.herald__glow {
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(closest-side,
+      rgba(255, 234, 186, 0.30), rgba(214, 178, 116, 0.10) 44%, transparent 74%);
+  opacity: 0;
+}
 
-@keyframes chev-bob {
-  0%, 100% { transform: translateY(0);     opacity: 0.55; }
-  50%      { transform: translateY(14%);   opacity: 1; }
+.is-playing .herald {
+  animation: herald-mist var(--dur, 4.4s) linear var(--at, 0s) forwards;
+}
+.is-playing .herald__glow {
+  animation: herald-haze var(--dur, 4.4s) linear var(--at, 0s) forwards;
+}
+
+/* 浮かび上がる → しばらく留まる → ほどけて消える */
+@keyframes herald-mist {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(1.10); filter: blur(22px) brightness(2.6); }
+  24%  { opacity: 1; transform: translate(-50%, -50%) scale(1);    filter: blur(0)    brightness(1); }
+  54%  { opacity: 1; transform: translate(-50%, -50%) scale(1);    filter: blur(0)    brightness(1); }
+  72%  { opacity: 0.72; transform: translate(-50%, -51.5%) scale(1.07); filter: blur(9px) brightness(1.35); }
+  100% { opacity: 0; transform: translate(-50%, -55%) scale(1.34); filter: blur(34px) brightness(1.6); }
+}
+
+/* まわりの光は、盾が消えたあとも少しだけ残る */
+@keyframes herald-haze {
+  0%   { opacity: 0;    transform: scale(0.8); }
+  24%  { opacity: 0.85; transform: scale(1); }
+  60%  { opacity: 0.85; transform: scale(1.02); }
+  100% { opacity: 0;    transform: scale(1.5); }
 }
 
 /* ============================================================
@@ -305,7 +356,7 @@ html, body {
    ============================================================ */
 .js .el { opacity: 0; }
 
-.is-playing .backdrop { animation: fade-in 1.8s var(--ease) forwards; }
+.is-playing .backdrop { animation: fade-in 2.4s var(--ease) forwards; }
 
 .is-playing .scene {
   animation: scene-in var(--dur, 1.6s) var(--ease) var(--at, 0s) forwards;
@@ -341,7 +392,7 @@ html, body {
 }
 
 .is-playing .logo__flash {
-  animation: logo-flash 1.9s ease-out var(--flash-at, 0s) forwards;
+  animation: logo-flash 2.6s ease-out var(--flash-at, 0s) forwards;
 }
 
 @keyframes logo-flash {
@@ -354,8 +405,7 @@ html, body {
 .is-playing .el[data-step^="lead"],
 .is-playing .date,
 .is-playing .coming,
-.is-playing .rule,
-.is-playing .chevron {
+.is-playing .rule {
   animation: line-in var(--dur, 0.95s) var(--ease) var(--at, 0s) forwards;
 }
 
@@ -375,7 +425,7 @@ html, body {
 }
 
 /* 演出が終わったあとの、常時動いている状態 */
-.is-settled .logo__sheen { animation: sheen 9.5s ease-in-out 1.2s infinite; }
+.is-settled .logo__sheen { animation: sheen 13s ease-in-out 2s infinite; }
 
 @keyframes sheen {
   0%       { opacity: 0;    background-position: 190% 0; }
@@ -389,7 +439,7 @@ html, body {
    ------------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {
   .scene__img, .scene__sky, .scene__sun,
-  .crest__glow, .logo__sheen, .chevron, .mote {
+  .crest__glow, .logo__sheen, .mote, .herald {
     animation: none !important;
   }
   .js .el { opacity: 1; }

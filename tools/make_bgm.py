@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-ティザー画面の BGM を合成する。
+ティザー画面の BGM を合成する（予備案）。
 
-  assets/audio/theme.mp3   64秒・繰り返し再生できる主題
+現在サイトで使っているのは、別途いただいた theme.mp3 のほう。
+このスクリプトは theme-synth.mp3 を書き出すだけで、それを上書きしない。
+
+  assets/audio/theme-synth.mp3   64秒・繰り返し再生できる主題（予備案）
 
 外部の音源は使わず、すべて数値計算で作っている。
 
@@ -340,7 +343,7 @@ def write_mp3(stereo: np.ndarray, path: pathlib.Path, bitrate: str) -> None:
 def main() -> None:
     print("BGM を合成します")
     stereo = build()
-    write_mp3(stereo, OUT_DIR / "theme.mp3", "160k")
+    write_mp3(stereo, OUT_DIR / "theme-synth.mp3", "160k")
 
 
 if __name__ == "__main__":

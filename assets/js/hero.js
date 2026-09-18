@@ -168,12 +168,10 @@
   // ---------------------------------------------------------
   // BGM
   //   黒画面のあいだは鳴らさない。背景が現れる AUDIO_AT から始める。
-  //   曲は画面と同じ時計で流れているものとして扱い、
-  //   途中で音を入れたときも、そのときの場面に合った位置から鳴らす。
+  //   曲は 22.5 秒の繰り返しで、いつ音を入れても頭から流す。
   // ---------------------------------------------------------
   var AUDIO_AT = 3.90;       // 曲を鳴らしはじめる時刻（黒画面が明けるところ）
-  var TRACK_LEN = 64.0;      // 曲の長さ。繰り返し再生する
-  var VOLUME = 0.55;
+  var VOLUME = 0.92;         // 曲そのものが控えめなので、ほぼそのままの大きさで
   var FADE = 1.6;            // 音量を上げきるまでの秒数
   var STORE = 'ff-sound';
 
@@ -202,14 +200,13 @@
     }, 40);
   }
 
-  function playFrom(seconds) {
-    var target = Math.min(Math.max(seconds, 0), TRACK_LEN - 0.2);
+  function playFromTop() {
     audio.volume = 0;
 
     // 頭出しは、曲の長さが分かってからでないと効かない。
-    // 音量を 0 にしたまま鳴らしはじめ、位置を合わせてから上げる。
-    function seekAndRaise() {
-      try { audio.currentTime = target; } catch (e) { /* 動かせなければそのまま */ }
+    // 音量を 0 にしたまま鳴らしはじめ、頭に戻してから上げる。
+    function rewindAndRaise() {
+      try { audio.currentTime = 0; } catch (e) { /* 動かせなければそのまま */ }
       fadeTo(VOLUME, FADE);
     }
 
@@ -219,9 +216,9 @@
     }
 
     if (audio.readyState >= 1) {
-      seekAndRaise();
+      rewindAndRaise();
     } else {
-      audio.addEventListener('loadedmetadata', seekAndRaise, { once: true });
+      audio.addEventListener('loadedmetadata', rewindAndRaise, { once: true });
     }
   }
 
@@ -230,13 +227,13 @@
     var t = elapsed();
 
     if (t < AUDIO_AT) {
-      // まだ黒画面。明けるのを待ってから、曲の頭出し位置ちょうどで鳴らす
+      // まだ黒画面。明けるのを待ってから鳴らしはじめる
       waitTimer = setTimeout(function () {
-        if (wanted) { playFrom(AUDIO_AT); }
+        if (wanted) { playFromTop(); }
       }, (AUDIO_AT - t) * 1000);
       return;
     }
-    playFrom(Math.max(AUDIO_AT, t % TRACK_LEN));
+    playFromTop();
   }
 
   function setSound(on) {

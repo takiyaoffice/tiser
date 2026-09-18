@@ -1,7 +1,7 @@
 /* 仙台への冒険 ティザー ─ オフラインでも起動画面として成立させるための最小構成 */
 'use strict';
 
-var CACHE = 'future-fantasy-v1';
+var CACHE = 'future-fantasy-v2';
 
 var ASSETS = [
   './',
@@ -46,12 +46,15 @@ self.addEventListener('activate', function (event) {
 self.addEventListener('fetch', function (event) {
   if (event.request.method !== 'GET') { return; }
 
+  // 音は途中から取りに来る（Range 要求）ことがあるので、ここでは触らない
+  if (/\.mp3($|\?)/.test(event.request.url) || event.request.headers.has('range')) { return; }
+
   event.respondWith(
     caches.match(event.request).then(function (hit) {
       if (hit) { return hit; }
 
       return fetch(event.request).then(function (res) {
-        if (res && res.ok && res.type === 'basic') {
+        if (res && res.status === 200 && res.type === 'basic') {
           var copy = res.clone();
           caches.open(CACHE).then(function (cache) { cache.put(event.request, copy); });
         }

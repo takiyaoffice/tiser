@@ -334,6 +334,60 @@ html, body {
 }
 
 /* ============================================================
+   音の入り切り
+   ブラウザは画面に触れるまで音を鳴らせないので、小さなボタンを置く
+   ============================================================ */
+.sound {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  right: calc(env(safe-area-inset-right, 0px) + 14px);
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(226, 198, 138, 0.38);
+  border-radius: 50%;
+  background: rgba(8, 10, 16, 0.42);
+  -webkit-backdrop-filter: blur(6px);
+          backdrop-filter: blur(6px);
+  cursor: pointer;
+  z-index: 30;
+  opacity: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.sound:hover,
+.sound:focus-visible {
+  border-color: rgba(240, 214, 156, 0.75);
+  background: rgba(8, 10, 16, 0.62);
+}
+
+.sound svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: rgba(236, 214, 162, 0.92);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sound__body { fill: rgba(236, 214, 162, 0.92); stroke-width: 1.2; }
+
+/* 消音のときは波を隠して、斜線を出す */
+.sound__wave  { opacity: 0; }
+.sound__slash { opacity: 1; }
+.sound[aria-pressed="true"] .sound__wave  { opacity: 1; }
+.sound[aria-pressed="true"] .sound__slash { opacity: 0; }
+
+/* 背景が現れるのに合わせて出す */
+.is-playing .sound {
+  animation: fade-in 1.4s var(--ease) var(--at, 3.9s) forwards;
+}
+
+/* ============================================================
    流れ星
    空の上半分だけを、ときどき一筋だけ横切る。
    エンブレムや文字より奥にあるので、その裏を通り抜ける。
@@ -457,6 +511,6 @@ html, body {
   }
   .meteor { display: none; }
   .js .el { opacity: 1; }
-  .scene, .backdrop { opacity: 1; }
+  .scene, .backdrop, .sound { opacity: 1; }
   .motes { display: none; }
 }

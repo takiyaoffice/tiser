@@ -58,6 +58,10 @@
   function schedule() {
     var byName = { scene: '.scene', herald: '.herald' };
 
+    // 音のボタンは背景と一緒に出す
+    var btn = document.getElementById('sound');
+    if (btn) { btn.style.setProperty('--at', AUDIO_AT + 's'); }
+
     STEPS.forEach(function (s) {
       var el = byName[s.step]
         ? document.querySelector(byName[s.step])
@@ -161,15 +165,124 @@
     }(true));
   }
 
+  // ---------------------------------------------------------
+  // BGM
+  //   黒画面のあいだは鳴らさない。背景が現れる AUDIO_AT から始める。
+  //   曲は画面と同じ時計で流れているものとして扱い、
+  //   途中で音を入れたときも、そのときの場面に合った位置から鳴らす。
+  // ---------------------------------------------------------
+  var AUDIO_AT = 3.90;       // 曲を鳴らしはじめる時刻（黒画面が明けるところ）
+  var TRACK_LEN = 64.0;      // 曲の長さ。繰り返し再生する
+  var VOLUME = 0.55;
+  var FADE = 1.6;            // 音量を上げきるまでの秒数
+  var STORE = 'ff-sound';
+
+  var audio = document.getElementById('bgm');
+  var soundBtn = document.getElementById('sound');
+  var fadeTimer = null;
+  var waitTimer = null;
+  var wanted = false;        // 利用者が音を望んでいるか
+
+  function elapsed() {
+    return window.__heroStart ? (performance.now() - window.__heroStart) / 1000 : 0;
+  }
+
+  function fadeTo(target, seconds) {
+    clearInterval(fadeTimer);
+    var from = audio.volume;
+    var t0 = performance.now();
+    fadeTimer = setInterval(function () {
+      var k = Math.min(1, (performance.now() - t0) / (seconds * 1000));
+      audio.volume = from + (target - from) * k;
+      if (k >= 1) {
+        clearInterval(fadeTimer);
+        fadeTimer = null;
+        if (target === 0) { audio.pause(); }
+      }
+    }, 40);
+  }
+
+  function playFrom(seconds) {
+    var target = Math.min(Math.max(seconds, 0), TRACK_LEN - 0.2);
+    audio.volume = 0;
+
+    // 頭出しは、曲の長さが分かってからでないと効かない。
+    // 音量を 0 にしたまま鳴らしはじめ、位置を合わせてから上げる。
+    function seekAndRaise() {
+      try { audio.currentTime = target; } catch (e) { /* 動かせなければそのまま */ }
+      fadeTo(VOLUME, FADE);
+    }
+
+    var p = audio.play();
+    if (p && p.catch) {
+      p.catch(function () { setSound(false); });   // 鳴らせなかったら消音に戻す
+    }
+
+    if (audio.readyState >= 1) {
+      seekAndRaise();
+    } else {
+      audio.addEventListener('loadedmetadata', seekAndRaise, { once: true });
+    }
+  }
+
+  function startAudio() {
+    clearTimeout(waitTimer);
+    var t = elapsed();
+
+    if (t < AUDIO_AT) {
+      // まだ黒画面。明けるのを待ってから、曲の頭出し位置ちょうどで鳴らす
+      waitTimer = setTimeout(function () {
+        if (wanted) { playFrom(AUDIO_AT); }
+      }, (AUDIO_AT - t) * 1000);
+      return;
+    }
+    playFrom(Math.max(AUDIO_AT, t % TRACK_LEN));
+  }
+
+  function setSound(on) {
+    wanted = on;
+    soundBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    soundBtn.setAttribute('aria-label', on ? '音を止める' : '音を鳴らす');
+    try { localStorage.setItem(STORE, on ? '1' : '0'); } catch (e) { /* 使えなくても困らない */ }
+
+    if (on) {
+      startAudio();
+    } else {
+      clearTimeout(waitTimer);
+      if (!audio.paused) { fadeTo(0, 0.5); }
+    }
+  }
+
+  if (audio && soundBtn) {
+    soundBtn.addEventListener('click', function () { setSound(!wanted); });
+
+    // 前回「鳴らす」にしていた人には、そのまま鳴らしてみる。
+    // ブラウザに止められたら、静かにボタンを消音側へ戻す。
+    try {
+      if (localStorage.getItem(STORE) === '1') {
+        window.addEventListener('load', function () { setSound(true); });
+      }
+    } catch (e) { /* localStorage が使えない環境 */ }
+  }
+
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
       clearTimeout(timer);
       clearTimeout(starTimer);
       timer = null;
       starTimer = null;
-    } else if (!timer && !reduceMotion && document.body.classList.contains('is-settled')) {
-      startMotes();
-      startStars();
+      if (wanted && !audio.paused) { audio.pause(); }
+    } else {
+      if (!timer && !reduceMotion && document.body.classList.contains('is-settled')) {
+        startMotes();
+        startStars();
+      }
+      if (wanted && audio.paused) {
+        audio.volume = 0;
+        var p = audio.play();
+        if (p && p.catch) { p.catch(function () { /* 戻れなければそのまま */ }); }
+        fadeTo(VOLUME, 0.8);
+      }
     }
   });
 

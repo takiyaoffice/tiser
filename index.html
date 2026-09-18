@@ -46,6 +46,20 @@
 
 <div class="backdrop" aria-hidden="true"></div>
 
+<!-- BGM。押されるまで読み込まない（ブラウザは無操作では音を鳴らせない） -->
+<audio id="bgm" src="assets/audio/theme.mp3" loop preload="none" playsinline></audio>
+
+<button class="sound" id="sound" type="button" aria-pressed="false" aria-label="音を鳴らす">
+  <svg viewBox="0 0 32 32" aria-hidden="true">
+    <path class="sound__body" d="M7 12.5h4.4L17 7.6v16.8l-5.6-4.9H7z"/>
+    <g class="sound__wave">
+      <path d="M20.6 12.2a5.4 5.4 0 0 1 0 7.6"/>
+      <path d="M23.5 9.2a9.5 9.5 0 0 1 0 13.6"/>
+    </g>
+    <path class="sound__slash" d="M20.8 12.2 L27.4 19.8 M27.4 12.2 L20.8 19.8"/>
+  </svg>
+</button>
+
 <main class="viewport">
   <h1 class="sr-only">FUTURE FANTASY ─未来の地図─　60年の軌跡、ここから新たな冒険へ。─舞台は仙台。2027.1.22-24　A new adventure is coming…</h1>
 

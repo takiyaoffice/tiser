@@ -182,12 +182,68 @@
   var waitTimer = null;
   var wanted = false;        // 利用者が音を望んでいるか
 
+  /* iPhone は audio.volume を受け付けない（音量は本体側のものとされている）。
+     音量を 0 にしたつもりでも、そのまま鳴ってしまう。
+     そこで Web Audio の音量つまみを間に挟み、そちらで上げ下げする。
+     muted は iPhone でも効くので、黒画面のあいだの無音はそれで二重に押さえる。 */
+  var ctx = null;
+  var gain = null;
+
+  function buildGraph() {
+    if (ctx || !audio) { return; }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { return; }
+    try {
+      ctx = new AC();
+      gain = ctx.createGain();
+      gain.gain.value = 0;
+      ctx.createMediaElementSource(audio).connect(gain);
+      gain.connect(ctx.destination);
+    } catch (e) {
+      ctx = null;
+      gain = null;                       // 使えなければ volume 頼みに戻す
+    }
+  }
+
+  function resumeGraph() {
+    if (ctx && ctx.state === 'suspended' && ctx.resume) {
+      ctx.resume().catch(function () { /* 戻れなければそのまま */ });
+    }
+  }
+
   function elapsed() {
     return window.__heroStart ? (performance.now() - window.__heroStart) / 1000 : 0;
   }
 
+  // 表示確認用。黒画面のあいだ本当に黙っているかを外から見る
+  window.__sound = function () {
+    return {
+      t: +elapsed().toFixed(2),
+      playing: !audio.paused,
+      muted: audio.muted,
+      gain: gain ? +gain.gain.value.toFixed(3) : null,
+      volume: +audio.volume.toFixed(3)
+    };
+  };
+
   function fadeTo(target, seconds) {
     clearInterval(fadeTimer);
+
+    if (gain && ctx) {
+      // つまみで上げ下げするので、要素側は開けきっておく。
+      // 要素の音量は Web Audio へ入る前に効いてしまい、0 のままだと何も鳴らない
+      audio.volume = 1;
+
+      var now = ctx.currentTime;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.linearRampToValueAtTime(target, now + seconds);
+      if (target === 0) {
+        fadeTimer = setTimeout(function () { audio.pause(); }, seconds * 1000 + 80);
+      }
+      return;
+    }
+
     var from = audio.volume;
     var t0 = performance.now();
     fadeTimer = setInterval(function () {
@@ -201,13 +257,29 @@
     }, 40);
   }
 
-  function playFromTop() {
+  function hush() {
+    audio.muted = true;
     audio.volume = 0;
+    if (gain && ctx) {
+      gain.gain.cancelScheduledValues(ctx.currentTime);
+      gain.gain.value = 0;
+    }
+  }
+
+  function playFromTop() {
+    hush();
 
     // 頭出しは、曲の長さが分かってからでないと効かない。
-    // 音量を 0 にしたまま鳴らしはじめ、頭に戻してから上げる。
+    // 黙らせたまま鳴らしはじめ、頭に戻してから上げる。
     function rewindAndRaise() {
       try { audio.currentTime = 0; } catch (e) { /* 動かせなければそのまま */ }
+      resumeGraph();
+      audio.muted = false;
+      // 消音を解いた拍子に止まる端末があるので、止まっていたら鳴らし直す
+      if (audio.paused) {
+        var q = audio.play();
+        if (q && q.catch) { q.catch(function () { /* 鳴らせなければそのまま */ }); }
+      }
       fadeTo(VOLUME, FADE);
     }
 
@@ -255,16 +327,23 @@
   }
 
   if (audio && soundBtn) {
-    soundBtn.addEventListener('click', function () { setSound(!wanted); });
+    soundBtn.addEventListener('click', function () {
+      buildGraph();      // 入口を通らずにここへ来た場合の用意（触れているので作れる）
+      resumeGraph();
+      setSound(!wanted);
+    });
   }
 
   /* 音の解錠。
      iOS は「利用者が触れた、その処理の中で」play() を呼ばないと鳴らしてくれない。
-     待ってから鳴らすのでは遅いので、触れた瞬間に音量 0 のまま鳴らしはじめ、
-     時間が来たら頭に戻して音量を上げる。 */
+     待ってから鳴らすのでは遅いので、触れた瞬間に黙らせたまま鳴らしはじめ、
+     黒画面が明けたところで頭に戻して音量を上げる。
+     ここで鳴ってしまわないよう、muted と音量つまみの両方で押さえておく。 */
   function unlockAudio() {
     if (!audio) { return; }
-    audio.volume = 0;
+    buildGraph();
+    resumeGraph();
+    hush();
     var p = audio.play();
     if (p && p.catch) { p.catch(function () { setSound(false, false); }); }
   }
@@ -282,11 +361,13 @@
         startStars();
       }
       if (wanted && audio.paused) {
-        audio.volume = 0;
+        var back = elapsed() >= AUDIO_AT;
+        hush();
+        resumeGraph();
+        if (back) { audio.muted = false; }   // まだ黒画面のうちなら、黙らせたまま待たせる
         var p = audio.play();
         if (p && p.catch) { p.catch(function () { /* 戻れなければそのまま */ }); }
-        // まだ黒画面のうちなら、音量は 0 のまま待たせる
-        if (elapsed() >= AUDIO_AT) { fadeTo(VOLUME, 0.8); }
+        if (back) { fadeTo(VOLUME, 0.8); }
       }
     }
   });

@@ -201,7 +201,10 @@ SPLASH_SIZES = [
 
 
 def build_splash() -> None:
-    """起動直後の黒画面に、60TH だけが浮かぶ絵。演出の 1 コマ目と揃える。"""
+    """起動直後の黒画面に、60TH だけが浮かぶ絵。演出の 1 コマ目と揃える。
+
+    大きさと位置は CSS の .herald（画面幅の 13%・ど真ん中）に合わせている。
+    """
     shield = trim(Image.open(PARTS / "emblem-60th.png").convert("RGBA"), thr=8)
     out_dir = IMG / "splash"
     out_dir.mkdir(exist_ok=True)
@@ -209,8 +212,8 @@ def build_splash() -> None:
     total = 0
     for w, h, *_ in SPLASH_SIZES:
         canvas = Image.new("RGB", (w, h), (5, 6, 10))
-        art = to_width(shield, int(w * 0.30))
-        canvas.paste(art, ((w - art.width) // 2, int(h * 0.40) - art.height // 2), art)
+        art = to_width(shield, int(w * 0.13))
+        canvas.paste(art, ((w - art.width) // 2, h // 2 - art.height // 2), art)
         path = out_dir / f"splash-{w}x{h}.png"
         canvas.convert("P", palette=Image.ADAPTIVE, colors=96).save(path, optimize=True)
         total += path.stat().st_size

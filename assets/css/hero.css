@@ -272,8 +272,8 @@ html, body {
 .herald {
   position: fixed;
   left: 50%;
-  top: 44%;
-  width: min(52vw, 32vh);
+  top: 50%;                      /* 画面のど真ん中 */
+  width: min(13vw, 8.5vh);
   transform: translate(-50%, -50%);
   z-index: 20;
   opacity: 0;
@@ -288,7 +288,7 @@ html, body {
 
 .herald__glow {
   position: absolute;
-  inset: -30%;
+  inset: -95%;
   background: radial-gradient(closest-side,
       rgba(255, 234, 186, 0.30), rgba(214, 178, 116, 0.10) 44%, transparent 74%);
   opacity: 0;
@@ -301,13 +301,14 @@ html, body {
   animation: herald-haze var(--dur, 4.4s) linear var(--at, 0s) forwards;
 }
 
-/* 浮かび上がる → しばらく留まる → ほどけて消える */
+/* 浮かび上がる → しばらく留まる → ほどけて消える
+   ぼかし幅は、小さくなったアイコンに合わせて控えめにしてある */
 @keyframes herald-mist {
-  0%   { opacity: 0; transform: translate(-50%, -50%) scale(1.10); filter: blur(22px) brightness(2.6); }
-  24%  { opacity: 1; transform: translate(-50%, -50%) scale(1);    filter: blur(0)    brightness(1); }
-  54%  { opacity: 1; transform: translate(-50%, -50%) scale(1);    filter: blur(0)    brightness(1); }
-  72%  { opacity: 0.72; transform: translate(-50%, -51.5%) scale(1.07); filter: blur(9px) brightness(1.35); }
-  100% { opacity: 0; transform: translate(-50%, -55%) scale(1.34); filter: blur(34px) brightness(1.6); }
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(1.10); filter: blur(6px) brightness(2.6); }
+  24%  { opacity: 1; transform: translate(-50%, -50%) scale(1);    filter: blur(0)   brightness(1); }
+  54%  { opacity: 1; transform: translate(-50%, -50%) scale(1);    filter: blur(0)   brightness(1); }
+  72%  { opacity: 0.48; transform: translate(-50%, -52%) scale(1.09); filter: blur(3px) brightness(1.25); }
+  100% { opacity: 0; transform: translate(-50%, -58%) scale(1.42); filter: blur(11px) brightness(1.6); }
 }
 
 /* まわりの光は、盾が消えたあとも少しだけ残る */

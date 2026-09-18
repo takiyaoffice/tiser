@@ -286,19 +286,8 @@ html, body {
   height: auto;
 }
 
-.herald__glow {
-  position: absolute;
-  inset: -95%;
-  background: radial-gradient(closest-side,
-      rgba(255, 234, 186, 0.30), rgba(214, 178, 116, 0.10) 44%, transparent 74%);
-  opacity: 0;
-}
-
 .is-playing .herald {
   animation: herald-mist var(--dur, 4.4s) linear var(--at, 0s) forwards;
-}
-.is-playing .herald__glow {
-  animation: herald-haze var(--dur, 4.4s) linear var(--at, 0s) forwards;
 }
 
 /* 浮かび上がる → しばらく留まる → ほどけて消える
@@ -311,13 +300,6 @@ html, body {
   100% { opacity: 0; transform: translate(-50%, -58%) scale(1.42); filter: blur(11px) brightness(1.6); }
 }
 
-/* まわりの光は、盾が消えたあとも少しだけ残る */
-@keyframes herald-haze {
-  0%   { opacity: 0;    transform: scale(0.8); }
-  24%  { opacity: 0.85; transform: scale(1); }
-  60%  { opacity: 0.85; transform: scale(1.02); }
-  100% { opacity: 0;    transform: scale(1.5); }
-}
 
 /* ============================================================
    漂う光の粒

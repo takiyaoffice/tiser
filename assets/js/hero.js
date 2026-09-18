@@ -27,13 +27,13 @@
     { step: 'crest',  at: 5.10, for: 1.80 },
     // 3. エンブレム
     { step: 'logo',   at: 6.30, for: 2.50 },
-    // 4. 文字を一行ずつ
-    { step: 'lead1',  at: 8.50, for: 1.30 },
-    { step: 'lead2',  at: 9.10, for: 1.30 },
-    { step: 'rule1',  at: 9.70, for: 1.10 },
-    { step: 'date',   at: 10.10, for: 1.30 },
-    { step: 'rule2',  at: 10.90, for: 1.10 },
-    { step: 'coming', at: 11.30, for: 1.40 }
+    // 4. 文字を一行ずつ。一行ごとに間を取り、ゆっくり浮かび上がらせる
+    { step: 'lead1',  at: 8.60, for: 1.90 },
+    { step: 'lead2',  at: 9.80, for: 1.90 },
+    { step: 'rule1',  at: 10.90, for: 1.40 },
+    { step: 'date',   at: 11.40, for: 1.90 },
+    { step: 'rule2',  at: 12.70, for: 1.40 },
+    { step: 'coming', at: 13.20, for: 2.00 }
   ];
 
   var MOTES_AT = 5.2;

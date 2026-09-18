@@ -1,7 +1,7 @@
 /* 仙台への冒険 ティザー ─ オフラインでも起動画面として成立させるための最小構成 */
 'use strict';
 
-var CACHE = 'future-fantasy-v2';
+var CACHE = 'future-fantasy-v3';
 
 var ASSETS = [
   './',
@@ -10,6 +10,7 @@ var ASSETS = [
   './assets/css/hero.css',
   './assets/js/hero.js',
   './assets/img/clouds.png',
+  './assets/img/hero/tap.webp',
   './assets/img/hero/scene.webp',
   './assets/img/hero/crest.webp',
   './assets/img/hero/logo.webp',

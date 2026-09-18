@@ -35,6 +35,7 @@
 <meta property="og:description" content="60年の軌跡、ここから新たな冒険へ。─舞台は仙台。2027.1.22-24">
 <meta property="og:image" content="assets/img/parts/hero-composite.png">
 
+<link rel="preload" as="image" href="assets/img/hero/tap.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="assets/img/hero/crest.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="image" href="assets/img/hero/scene.webp" type="image/webp" fetchpriority="high">
 <link rel="stylesheet" href="assets/css/hero.css">
@@ -46,8 +47,8 @@
 
 <div class="backdrop" aria-hidden="true"></div>
 
-<!-- BGM。押されるまで読み込まない（ブラウザは無操作では音を鳴らせない） -->
-<audio id="bgm" src="assets/audio/theme.mp3" loop preload="none" playsinline></audio>
+<!-- BGM。黒画面を読んでいるあいだに用意しておき、タップで解錠する -->
+<audio id="bgm" src="assets/audio/theme.mp3" loop preload="auto" playsinline></audio>
 
 <button class="sound" id="sound" type="button" aria-pressed="false" aria-label="音を鳴らす">
   <svg viewBox="0 0 32 32" aria-hidden="true">
@@ -59,6 +60,14 @@
     <path class="sound__slash" d="M20.8 12.2 L27.4 19.8 M27.4 12.2 L20.8 19.8"/>
   </svg>
 </button>
+
+<!-- 最初の黒画面。ここに触れて物語がはじまる（音もここで解錠する） -->
+<div class="gate" id="gate">
+  <button class="gate__btn" id="gateBtn" type="button">
+    <img class="gate__img" src="assets/img/hero/tap.webp"
+         alt="タップして物語をはじめる" decoding="async">
+  </button>
+</div>
 
 <main class="viewport">
   <h1 class="sr-only">FUTURE FANTASY ─未来の地図─　60年の軌跡、ここから新たな冒険へ。─舞台は仙台。2027.1.22-24　A new adventure is coming…</h1>

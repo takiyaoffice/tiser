@@ -8,6 +8,7 @@
   assets/img/hero/lead.webp    60年の軌跡、…／舞台は仙台。
   assets/img/hero/date.webp    2027.1.22-24
   assets/img/hero/coming.webp  A new adventure is coming…
+  assets/img/hero/tap.webp     ▶タップ シテ モノガタリ ヲ ハジメル
   assets/img/icon-*.png        PWA アイコン
   assets/img/clouds.png        空を流れる雲のテクスチャ
   assets/img/splash/*.png      iOS の起動画像
@@ -24,12 +25,15 @@ import pathlib
 
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 IMG = ROOT / "assets" / "img"
 PARTS = IMG / "parts"
 HERO = IMG / "hero"
+
+# ドラクエ風の窓文字に使う 16x16 ビットマップ書体
+UNIFONT = "/usr/share/fonts/opentype/unifont/unifont_jp.otf"
 
 # 書き出す幅。表示サイズの約 2 倍を確保している
 #   画面幅 853 のときの表示幅 → その 2 倍
@@ -122,6 +126,53 @@ def build_coming() -> None:
     out = np.dstack([rgb, alpha * 255]).astype(np.uint8)
     im = trim(Image.fromarray(out, "RGBA"), thr=6)
     save(to_width(im, SIZES["coming"]), "coming")
+
+
+def build_tap() -> None:
+    """黒画面に出す「▶タップ シテ モノガタリ ヲ ハジメル」を作る。
+
+    ドラクエの窓文字に寄せたいので、16x16 のビットマップ書体（Unifont JP）で
+    一度だけ描き、あとは NEAREST で整数倍に引き伸ばす。曲線を持たない
+    素の点の並びがそのまま残るので、輪郭が丸くならない。
+    """
+    font = ImageFont.truetype(UNIFONT, 16)
+    words = ["タップ", "シテ", "モノガタリ", "ヲ", "ハジメル"]
+    gap = 8                       # 語の間は半角ぶん
+    pad = 2
+
+    # ▶ は書体まかせにせず、点で描く（大きさと重心をそろえるため）
+    tri_w, tri_h = 7, 11
+    width = pad + tri_w + gap + sum(
+        round(font.getlength(w)) for w in words) + gap * (len(words) - 1) + pad
+    height = 16 + pad * 2
+
+    ink = Image.new("L", (width, height), 0)
+    d = ImageDraw.Draw(ink)
+    top = (height - tri_h) // 2
+    for i in range(tri_w):
+        half = round((tri_w - 1 - i) * (tri_h - 1) / (2 * (tri_w - 1)))
+        d.line([(pad + i, top + (tri_h - 1) // 2 - half),
+                (pad + i, top + (tri_h - 1) // 2 + half)], fill=255)
+
+    x = pad + tri_w + gap
+    for w in words:
+        d.text((x, pad), w, font=font, fill=255)
+        x += round(font.getlength(w)) + gap
+
+    scale = 5
+    big = ink.resize((width * scale, height * scale), Image.NEAREST)
+
+    # 白い文字＋右下へ一段ずらした影。黒画面でも縁が沈まない
+    shift = scale
+    canvas = Image.new("RGBA", (big.width + shift, big.height + shift), (0, 0, 0, 0))
+    sh = Image.new("L", canvas.size, 0)
+    sh.paste(big, (shift, shift))
+    canvas.paste((6, 8, 16, 255), (0, 0), sh)
+    body = Image.new("L", canvas.size, 0)
+    body.paste(big, (0, 0))
+    canvas.paste((248, 244, 232, 255), (0, 0), body)
+
+    save(trim(canvas, thr=4), "tap")
 
 
 # ---------------------------------------------------------------------------
@@ -226,6 +277,7 @@ def main() -> None:
     build_parts()
     build_lead()
     build_coming()
+    build_tap()
     build_clouds()
     build_icons()
     build_splash()

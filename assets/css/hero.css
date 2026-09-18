@@ -267,6 +267,54 @@ html, body {
 }
 
 /* ============================================================
+   入口。黒画面に一行だけ置き、触れられるのを待つ
+   ブラウザは利用者が触れるまで音を鳴らせないので、ここが音の解錠も兼ねる
+   ============================================================ */
+.gate {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--ink, #05070c);
+  place-items: center;
+}
+
+.js .gate { display: grid; }       /* JS が動かない環境では出さない */
+
+.gate__btn {
+  display: block;
+  padding: 7vh 5vw;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 16x16 の点で描いた一行。等倍で拡げてあるので、字の角が丸くならない */
+.gate__img {
+  display: block;
+  width: min(88vw, 620px);
+  height: auto;
+  opacity: 0;
+  animation: tap-in 1.6s var(--ease) 0.7s forwards,
+             tap-pulse 2.4s ease-in-out 2.3s infinite;
+}
+
+@keyframes tap-in   { to { opacity: 0.95; } }
+@keyframes tap-pulse {
+  0%, 100% { opacity: 0.95; }
+  50%      { opacity: 0.34; }
+}
+
+/* 触れられたら、文字だけが引く。下地は本体の黒とそろえてあるので継ぎ目は出ない */
+.is-started .gate {
+  pointer-events: none;
+  animation: gate-out 0.55s ease forwards;
+}
+
+@keyframes gate-out { to { opacity: 0; visibility: hidden; } }
+
+/* ============================================================
    最初の黒画面。中央の 60TH が、霧のようにほどけて消える
    ============================================================ */
 .herald {
@@ -512,4 +560,7 @@ html, body {
   .js .el { opacity: 1; }
   .scene, .backdrop, .sound { opacity: 1; }
   .motes { display: none; }
+  /* 入口は出さない。音は右下のボタンから入れてもらう */
+  .js .gate { display: none; }
+  .gate__img { animation: none; opacity: 0.95; }
 }

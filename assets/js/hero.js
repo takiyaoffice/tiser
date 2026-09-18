@@ -167,8 +167,9 @@
 
   // ---------------------------------------------------------
   // BGM
-  //   黒画面のあいだは鳴らさない。背景が現れる AUDIO_AT から始める。
-  //   曲は 22.5 秒の繰り返しで、いつ音を入れても頭から流す。
+  //   入口に触れた瞬間に「鳴らしてよい」ことを確かめ（＝解錠）、
+  //   黒画面が明ける AUDIO_AT で頭から流しはじめる。
+  //   曲は 48.9 秒の繰り返し。いつ音を入れ直しても頭から流す。
   // ---------------------------------------------------------
   var AUDIO_AT = 3.90;       // 曲を鳴らしはじめる時刻（黒画面が明けるところ）
   var VOLUME = 0.92;         // 曲そのものが控えめなので、ほぼそのままの大きさで
@@ -212,7 +213,7 @@
 
     var p = audio.play();
     if (p && p.catch) {
-      p.catch(function () { setSound(false); });   // 鳴らせなかったら消音に戻す
+      p.catch(function () { setSound(false, false); });  // 鳴らせなかったら消音に戻す
     }
 
     if (audio.readyState >= 1) {
@@ -236,11 +237,14 @@
     playFromTop();
   }
 
-  function setSound(on) {
+  function setSound(on, remember) {
     wanted = on;
     soundBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
     soundBtn.setAttribute('aria-label', on ? '音を止める' : '音を鳴らす');
-    try { localStorage.setItem(STORE, on ? '1' : '0'); } catch (e) { /* 使えなくても困らない */ }
+    // ブラウザに止められただけのときは覚えない（次に開いたらまた試す）
+    if (remember !== false) {
+      try { localStorage.setItem(STORE, on ? '1' : '0'); } catch (e) { /* 使えなくても困らない */ }
+    }
 
     if (on) {
       startAudio();
@@ -252,14 +256,17 @@
 
   if (audio && soundBtn) {
     soundBtn.addEventListener('click', function () { setSound(!wanted); });
+  }
 
-    // 前回「鳴らす」にしていた人には、そのまま鳴らしてみる。
-    // ブラウザに止められたら、静かにボタンを消音側へ戻す。
-    try {
-      if (localStorage.getItem(STORE) === '1') {
-        window.addEventListener('load', function () { setSound(true); });
-      }
-    } catch (e) { /* localStorage が使えない環境 */ }
+  /* 音の解錠。
+     iOS は「利用者が触れた、その処理の中で」play() を呼ばないと鳴らしてくれない。
+     待ってから鳴らすのでは遅いので、触れた瞬間に音量 0 のまま鳴らしはじめ、
+     時間が来たら頭に戻して音量を上げる。 */
+  function unlockAudio() {
+    if (!audio) { return; }
+    audio.volume = 0;
+    var p = audio.play();
+    if (p && p.catch) { p.catch(function () { setSound(false, false); }); }
   }
 
   document.addEventListener('visibilitychange', function () {
@@ -278,7 +285,8 @@
         audio.volume = 0;
         var p = audio.play();
         if (p && p.catch) { p.catch(function () { /* 戻れなければそのまま */ }); }
-        fadeTo(VOLUME, 0.8);
+        // まだ黒画面のうちなら、音量は 0 のまま待たせる
+        if (elapsed() >= AUDIO_AT) { fadeTo(VOLUME, 0.8); }
       }
     }
   });
@@ -308,25 +316,47 @@
     });
   }
 
-  // 絵がそろってから始める（途中から見えてしまわないように）
   var started = false;
   function begin() {
     if (started) { return; }
     started = true;
+    document.body.classList.add('is-started');
     run();
   }
 
+  // 黒画面を読んでもらっているあいだに、絵をそろえておく
   (function preload() {
-    var names = ['scene', 'crest', 'logo', 'lead1', 'lead2', 'date', 'coming'];
-    var left = names.length;
-    names.forEach(function (n) {
-      var img = new Image();
-      img.onload = img.onerror = function () { if (--left === 0) { begin(); } };
-      img.src = 'assets/img/hero/' + n + '.webp';
+    ['scene', 'crest', 'logo', 'lead1', 'lead2', 'date', 'coming'].forEach(function (n) {
+      new Image().src = 'assets/img/hero/' + n + '.webp';
     });
   }());
 
-  setTimeout(begin, 4000);   // 読み込みが極端に遅い場合の保険
+  // ---------------------------------------------------------
+  // 入口。ここに触れたところから物語がはじまる
+  // ---------------------------------------------------------
+  var gate = document.getElementById('gate');
+  var gateBtn = document.getElementById('gateBtn');
+
+  if (reduceMotion) {
+    if (gate) { gate.remove(); }
+    begin();
+  } else if (gateBtn) {
+    gateBtn.addEventListener('click', function () {
+      if (started) { return; }
+
+      // 前回わざわざ消音にした人には、そのまま静かに見せる
+      var muted = false;
+      try { muted = localStorage.getItem(STORE) === '0'; } catch (e) { /* 使えなくても困らない */ }
+
+      if (!muted) {
+        unlockAudio();        // 触れたこの場で鳴らしはじめないと、iOS は許してくれない
+        setSound(true);       // 音量を上げるのは AUDIO_AT から
+      }
+      begin();
+    });
+  } else {
+    begin();                  // 入口が見つからないときは、そのまま始める
+  }
 
   // ---------------------------------------------------------
   // PWA

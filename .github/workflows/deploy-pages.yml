@@ -31,8 +31,9 @@ jobs:
           mkdir -p _site
           cp index.html manifest.webmanifest sw.js _site/
           cp -r assets _site/
-          # 原画は配信しない（加工前の元データなので、サイトでは使わない）
-          rm -f _site/assets/img/teaser-source.png
+          # 元データは配信しない（書き出し前の素材なので、サイトでは使わない）
+          rm -rf _site/assets/img/parts
+          rm -f  _site/assets/img/teaser-source.png
           find _site -type f | sort
           du -sh _site
 

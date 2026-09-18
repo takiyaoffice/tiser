@@ -1,24 +1,22 @@
 /* 仙台への冒険 ティザー ─ オフラインでも起動画面として成立させるための最小構成 */
 'use strict';
 
-var CACHE = 'sendai-teaser-v2';
+var CACHE = 'future-fantasy-v1';
 
 var ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './assets/css/teaser.css',
-  './assets/js/teaser.js',
-  './assets/img/teaser.webp',
-  './assets/img/teaser.png',
+  './assets/css/hero.css',
+  './assets/js/hero.js',
   './assets/img/clouds.png',
-  './assets/img/plate/adv.webp',
-  './assets/img/plate/jp.webp',
-  './assets/img/plate/lead.webp',
-  './assets/img/plate/date.webp',
-  './assets/img/plate/coming.webp',
-  './assets/img/plate/map.webp',
-  './assets/img/plate/tag.webp',
+  './assets/img/hero/scene.webp',
+  './assets/img/hero/crest.webp',
+  './assets/img/hero/logo.webp',
+  './assets/img/hero/lead1.webp',
+  './assets/img/hero/lead2.webp',
+  './assets/img/hero/date.webp',
+  './assets/img/hero/coming.webp',
   './assets/img/icon-192.png',
   './assets/img/icon-512.png',
   './assets/img/apple-touch-icon.png',

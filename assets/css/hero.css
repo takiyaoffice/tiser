@@ -1,0 +1,398 @@
+@charset "UTF-8";
+/* ============================================================
+   FUTURE FANTASY ─未来の地図─  ティザー
+   完成形の一枚絵と同じ配置を、部品ごとのレイヤーで組み直したもの。
+   座標はすべて 853 x 1844 の絵に対する % で書いている。
+   ============================================================ */
+
+:root {
+  --ink: #05070c;
+  --gold: #e7c98a;
+  --app-h: 100vh;
+
+  --ratio: 0.4626;           /* 853 / 1844 */
+
+  /* 演出のイージング。ゆっくり着地させる */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@supports (height: 100dvh) { :root { --app-h: 100dvh; } }
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ink);
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------
+   画面いっぱいの下地。端末の比率が絵と違うときの余白を埋める
+   ------------------------------------------------------------ */
+.backdrop {
+  position: fixed;
+  inset: -8%;
+  background: url("../img/hero/scene.webp") center / cover no-repeat;
+  filter: blur(46px) brightness(0.32) saturate(0.8);
+  transform: scale(1.1);
+  opacity: 0;
+  z-index: 0;
+}
+
+.viewport {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.stage {
+  position: relative;
+  width: min(100vw, calc(var(--app-h) * var(--ratio)));
+  height: min(calc(100vw / var(--ratio)), var(--app-h));
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--ink);
+}
+
+/* ============================================================
+   背景
+   ============================================================ */
+.scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.scene__img,
+.scene__sky,
+.scene__sun,
+.scene__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* 絵そのもの。ごくゆっくり息をするように寄り引きする */
+.scene__img {
+  background: url("../img/hero/scene.webp") center / 100% 100% no-repeat;
+  will-change: transform;
+  animation: scene-drift 54s ease-in-out infinite alternate;
+}
+
+@keyframes scene-drift {
+  from { transform: scale(1.0) translate3d(0, 0, 0); }
+  to   { transform: scale(1.045) translate3d(0, -0.6%, 0); }
+}
+
+/* 空を流れる雲 */
+.scene__sky {
+  background: url("../img/clouds.png") repeat;
+  background-size: 66% auto;
+  mix-blend-mode: soft-light;
+  opacity: 0.16;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0 38%, rgba(0,0,0,.45) 50%, transparent 60%);
+          mask-image: linear-gradient(to bottom, #000 0 38%, rgba(0,0,0,.45) 50%, transparent 60%);
+  animation: sky-drift 150s linear infinite;
+}
+
+@keyframes sky-drift {
+  from { background-position: 0 0; }
+  to   { background-position: -132% 0; }   /* タイル 2 枚ぶん */
+}
+
+/* 地平線の夕日。ゆっくり明るさが変わる */
+.scene__sun {
+  background: radial-gradient(22% 9% at 93.5% 60.5%,
+      rgba(255, 214, 148, 0.26), rgba(255, 176, 92, 0.10) 45%, transparent 76%);
+  mix-blend-mode: screen;
+  animation: sun-breath 17s ease-in-out infinite;
+}
+
+@keyframes sun-breath {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1; }
+}
+
+/* 上半分を落として文字を読みやすくする（完成形と同じ濃さ） */
+.scene__scrim {
+  background:
+    linear-gradient(to bottom,
+      rgba(3, 5, 11, 0.66) 0%,
+      rgba(3, 5, 11, 0.54) 22%,
+      rgba(3, 5, 11, 0.34) 42%,
+      rgba(3, 5, 11, 0.10) 56%,
+      rgba(3, 5, 11, 0) 66%),
+    radial-gradient(120% 60% at 50% 100%, rgba(3, 5, 11, 0.42), transparent 60%);
+}
+
+/* ============================================================
+   置かれる要素。位置と大きさは完成形の実測値
+   ============================================================ */
+.crest, .logo, .lead, .date, .coming, .chevron, .rule {
+  position: absolute;
+  z-index: 4;
+}
+
+.crest  { left: 5.01%;  top:  6.14%; width: 15.47%; }
+.logo   { left: 20.63%; top: 12.91%; width: 60.84%; }
+.lead   { left: 17.47%; top: 38.61%; width: 65.18%; }
+.date   { left: 31.54%; top: 47.40%; width: 37.40%; }
+.coming { left: 22.75%; top: 53.69%; width: 54.51%; }
+
+.rule        { left: 36.80%; width: 26.40%; height: 1px; }
+.rule--1     { top: 45.28%; }
+.rule--2     { top: 52.60%; }
+
+.chevron { left: 45.66%; top: 57.37%; width: 8.68%; }
+
+/* 枠いっぱいに敷く画像 */
+.crest__img,
+.logo__img,
+.lead__l1 {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* 日付と英文は、それ自体が配置要素なので幅は上の指定のまま */
+.date,
+.coming {
+  display: block;
+  height: auto;
+}
+
+/* 2 行目だけは 1 行目より短い。完成形と同じ長さと行頭位置にする */
+.lead .lead__l2 {
+  display: block;
+  width: 39.2%;
+  height: auto;
+  margin: 2.1% 0 0 0.5%;
+}
+
+/* 60TH。ほのかに息づく光をまとう */
+.crest { z-index: 6; }
+.crest__glow {
+  position: absolute;
+  inset: -34%;
+  background: radial-gradient(closest-side,
+      rgba(255, 226, 150, 0.30), rgba(190, 150, 70, 0.10) 45%, transparent 72%);
+  animation: crest-breath 6.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes crest-breath {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.85; }
+}
+
+/* FUTURE FANTASY。登場のときに光が差し、ときどき表面を光が走る */
+.logo { z-index: 5; }
+
+.logo__flash {
+  position: absolute;
+  inset: -22% -14%;
+  background: radial-gradient(closest-side,
+      rgba(255, 244, 214, 0.55), rgba(255, 206, 140, 0.18) 42%, transparent 74%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.logo__sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(112deg,
+      transparent 38%, rgba(255, 252, 238, 0.85) 48%, rgba(255, 240, 205, 0.35) 53%, transparent 62%);
+  background-size: 260% 100%;
+  background-position: 190% 0;
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-mask-image: url("../img/hero/logo.webp");
+          mask-image: url("../img/hero/logo.webp");
+  -webkit-mask-size: 100% 100%;
+          mask-size: 100% 100%;
+}
+
+/* 区切りの飾り。細い線と菱形 */
+.rule {
+  background: linear-gradient(to right,
+      transparent, rgba(226, 198, 138, 0.62) 18%, rgba(226, 198, 138, 0.62) 82%, transparent);
+}
+.rule::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.62vh;
+  height: 0.62vh;
+  max-width: 7px;
+  max-height: 7px;
+  background: rgba(240, 214, 156, 0.95);
+  transform: translate(-50%, -50%) rotate(45deg);
+  box-shadow: 0 0 6px rgba(240, 214, 156, 0.5);
+}
+
+/* 下向きの山形。スクロールを促す印 */
+.chevron svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  fill: rgba(236, 222, 196, 0.82);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+}
+
+.is-settled .chevron { animation: chev-bob 2.6s ease-in-out infinite; }
+
+@keyframes chev-bob {
+  0%, 100% { transform: translateY(0);     opacity: 0.55; }
+  50%      { transform: translateY(14%);   opacity: 1; }
+}
+
+/* ============================================================
+   漂う光の粒
+   ============================================================ */
+.motes {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.mote {
+  position: absolute;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle,
+      rgba(255, 250, 226, 0.95) 0%, rgba(255, 216, 150, 0.45) 34%, transparent 70%);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation-name: mote-float;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes mote-float {
+  0%   { opacity: 0; transform: translate3d(0, 0, 0) scale(0.6); }
+  16%  { opacity: var(--peak, 0.6); }
+  50%  { transform: translate3d(calc(var(--dx, 6px) * 0.5), calc(var(--dy, -40px) * 0.5), 0) scale(1); }
+  78%  { opacity: var(--peak, 0.6); }
+  100% { opacity: 0; transform: translate3d(var(--dx, 6px), var(--dy, -40px), 0) scale(0.8); }
+}
+
+/* ============================================================
+   初回演出
+   JS が動くときだけ、いったん隠してから順に出す
+   ============================================================ */
+.js .el { opacity: 0; }
+
+.is-playing .backdrop { animation: fade-in 1.8s var(--ease) forwards; }
+
+.is-playing .scene {
+  animation: scene-in var(--dur, 1.6s) var(--ease) var(--at, 0s) forwards;
+}
+
+@keyframes scene-in {
+  from { opacity: 0; transform: scale(1.06); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fade-in { to { opacity: 1; } }
+
+/* 60TH は大きさを変えずに、光とともに浮かび上がる */
+.is-playing .crest {
+  animation: crest-in var(--dur, 1.4s) var(--ease) var(--at, 0s) forwards;
+}
+
+@keyframes crest-in {
+  0%   { opacity: 0; transform: scale(1.18); filter: brightness(2.2) blur(6px); }
+  55%  { opacity: 1; }
+  100% { opacity: 1; transform: scale(1);    filter: brightness(1) blur(0); }
+}
+
+/* ロゴは大きめから寄ってきて、ぼけが取れる */
+.is-playing .logo {
+  animation: logo-in var(--dur, 1.8s) var(--ease) var(--at, 0s) forwards;
+}
+
+@keyframes logo-in {
+  0%   { opacity: 0; transform: scale(1.16); filter: blur(14px) brightness(1.7); }
+  40%  { opacity: 1; }
+  100% { opacity: 1; transform: scale(1);    filter: blur(0) brightness(1); }
+}
+
+.is-playing .logo__flash {
+  animation: logo-flash 1.9s ease-out var(--flash-at, 0s) forwards;
+}
+
+@keyframes logo-flash {
+  0%   { opacity: 0;    transform: scale(0.72); }
+  22%  { opacity: 0.95; }
+  100% { opacity: 0;    transform: scale(1.22); }
+}
+
+/* 文字は下からすっと上がって、ぼけが取れる */
+.is-playing .el[data-step^="lead"],
+.is-playing .date,
+.is-playing .coming,
+.is-playing .rule,
+.is-playing .chevron {
+  animation: line-in var(--dur, 0.95s) var(--ease) var(--at, 0s) forwards;
+}
+
+@keyframes line-in {
+  0%   { opacity: 0; transform: translateY(16px); filter: blur(5px); }
+  100% { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+
+/* 区切り線は横に伸びる */
+.is-playing .rule {
+  animation: rule-in var(--dur, 0.9s) var(--ease) var(--at, 0s) forwards;
+}
+
+@keyframes rule-in {
+  0%   { opacity: 0; transform: scaleX(0.25); }
+  100% { opacity: 1; transform: scaleX(1); }
+}
+
+/* 演出が終わったあとの、常時動いている状態 */
+.is-settled .logo__sheen { animation: sheen 9.5s ease-in-out 1.2s infinite; }
+
+@keyframes sheen {
+  0%       { opacity: 0;    background-position: 190% 0; }
+  6%       { opacity: 0.9; }
+  22%      { opacity: 0;    background-position: -90% 0; }
+  100%     { opacity: 0;    background-position: -90% 0; }
+}
+
+/* ------------------------------------------------------------
+   動きを減らす設定のときは、完成形をそのまま見せる
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .scene__img, .scene__sky, .scene__sun,
+  .crest__glow, .logo__sheen, .chevron, .mote {
+    animation: none !important;
+  }
+  .js .el { opacity: 1; }
+  .scene, .backdrop { opacity: 1; }
+  .motes { display: none; }
+}

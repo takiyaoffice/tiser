@@ -113,12 +113,63 @@
     }());
   }
 
+  // ---------------------------------------------------------
+  // 流れ星。空の上半分を、ときどき一筋だけ横切る
+  // ---------------------------------------------------------
+  var starTimer = null;
+
+  function shootingStar() {
+    if (document.hidden) { return; }
+    var rect = stage.getBoundingClientRect();
+    if (!rect.width) { return; }
+
+    var el = document.createElement('span');
+    el.className = 'meteor';
+
+    var toLeft = Math.random() < 0.4;                 // まれに逆向きへ流れる
+    var deg = 17 + Math.random() * 16;                // 下向きの角度
+    var len = (11 + Math.random() * 10) / 100;        // 尾の長さ（画面幅に対する比）
+    var travel = (26 + Math.random() * 20) / 100;     // 流れる距離
+
+    el.style.width = (len * 100).toFixed(1) + '%';
+    el.style.top = (4 + Math.random() * 26).toFixed(1) + '%';
+    el.style.left = toLeft
+      ? (52 + Math.random() * 34).toFixed(1) + '%'
+      : (4 + Math.random() * 26).toFixed(1) + '%';
+
+    el.style.setProperty('--rot', (toLeft ? 180 - deg : deg) + 'deg');
+    el.style.setProperty('--travel', (travel * rect.width).toFixed(0) + 'px');
+    el.style.setProperty('--peak', (0.45 + Math.random() * 0.3).toFixed(2));
+    el.style.animationDuration = (0.95 + Math.random() * 0.6).toFixed(2) + 's';
+
+    el.addEventListener('animationend', function () { el.remove(); });
+    motes.appendChild(el);
+  }
+
+  function startStars() {
+    if (reduceMotion) { return; }
+    (function loop(first) {
+      var wait = first ? 5000 + Math.random() * 7000 : 17000 + Math.random() * 21000;
+      starTimer = setTimeout(function () {
+        shootingStar();
+        // たまに続けてもう一筋
+        if (Math.random() < 0.28) {
+          setTimeout(shootingStar, 900 + Math.random() * 1600);
+        }
+        loop(false);
+      }, wait);
+    }(true));
+  }
+
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
       clearTimeout(timer);
+      clearTimeout(starTimer);
       timer = null;
+      starTimer = null;
     } else if (!timer && !reduceMotion && document.body.classList.contains('is-settled')) {
       startMotes();
+      startStars();
     }
   });
 
@@ -136,8 +187,10 @@
       requestAnimationFrame(function () {
         document.body.classList.add('is-playing');
         window.__heroStart = performance.now();     // 表示確認用
+        window.__star = shootingStar;               // 表示確認用
 
         setTimeout(startMotes, MOTES_AT * 1000);
+        setTimeout(startStars, SETTLE_AT * 1000);
         setTimeout(function () {
           document.body.classList.add('is-settled');
         }, SETTLE_AT * 1000);

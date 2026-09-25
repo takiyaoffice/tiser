@@ -435,6 +435,287 @@ html, body {
 }
 
 /* ============================================================
+   隠された入口
+
+   落ち着いてしばらくすると、画面の光が 60TH へ吸い込まれていく。
+   真っ暗にはせず、紋章のまわりだけを残す。
+   位置は JS が紋章の実寸から測り、--spot-* / --tap-* / --hint-* に書き込む。
+   ============================================================ */
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;                 /* 見るだけの幕。操作は妨げない */
+  opacity: 0;
+  background: radial-gradient(circle var(--spot-r, 150px) at var(--spot-x, 13vw) var(--spot-y, 11vh),
+      rgba(3, 4, 9, 0)    0%,
+      rgba(3, 4, 9, 0.05) 30%,
+      rgba(3, 4, 9, 0.56) 68%,
+      rgba(3, 4, 9, 0.93) 100%);        /* 端まで行っても 0.93。完全には落とさない */
+}
+
+.is-lured .veil { animation: veil-in var(--dim, 16s) ease-in-out forwards; }
+
+@keyframes veil-in { to { opacity: 1; } }
+
+/* 紋章に集まってきた光。幕より前に置き、重ねて明るくする */
+.halo {
+  position: fixed;
+  left: var(--spot-x, 13vw);
+  top: var(--spot-y, 11vh);
+  width: calc(var(--spot-r, 150px) * 2);
+  height: calc(var(--spot-r, 150px) * 2);
+  margin: calc(var(--spot-r, 150px) * -1) 0 0 calc(var(--spot-r, 150px) * -1);
+  z-index: 13;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0;
+  background: radial-gradient(closest-side,
+      rgba(255, 228, 162, 0.30), rgba(214, 170, 82, 0.10) 44%, transparent 72%);
+}
+
+.is-lured .halo {
+  animation: halo-in var(--dim, 16s) ease-in-out forwards,
+             halo-breath 5.6s ease-in-out var(--dim, 16s) infinite;
+}
+
+@keyframes halo-in     { to { opacity: 0.5; } }
+@keyframes halo-breath { 0%, 100% { opacity: 0.38; } 50% { opacity: 0.82; } }
+
+/* 紋章そのものも、ごくわずかに息をする。
+   （crest-in を置き換えるので、着地したときの姿を自分で持っておく） */
+.is-lured .crest { animation: crest-pulse 4.6s ease-in-out infinite; }
+
+@keyframes crest-pulse {
+  0%, 100% { opacity: 1; transform: scale(1);     filter: brightness(1); }
+  50%      { opacity: 1; transform: scale(1.035); filter: brightness(1.13); }
+}
+
+/* 暗くなりきるころ、紋章のわきに置かれる一言 */
+.hint {
+  position: fixed;
+  left: var(--hint-x, 5vw);
+  top: var(--hint-y, 22vh);
+  width: var(--hint-w, 62vw);
+  margin: 0;
+  z-index: 14;
+  pointer-events: none;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+  font-size: clamp(11px, 3.3vw, 16px);
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  line-height: 1.9;
+  color: rgba(240, 228, 200, 0.92);
+  text-shadow: 0 0 14px rgba(255, 208, 132, 0.4), 0 1px 4px rgba(0, 0, 0, 0.95);
+  opacity: 0;
+}
+
+.is-lured .hint {
+  animation: hint-in 4.6s var(--ease) var(--hint-at, 8s) forwards,
+             hint-breath 7s ease-in-out calc(var(--hint-at, 8s) + 4.6s) infinite;
+}
+
+@keyframes hint-in     { to { opacity: 0.86; } }
+@keyframes hint-breath { 0%, 100% { opacity: 0.86; } 50% { opacity: 0.52; } }
+
+/* 触れる場所。見た目は持たず、紋章より一回り広くとってある */
+.secret {
+  display: none;
+  position: fixed;
+  left: var(--tap-x, 0px);
+  top: var(--tap-y, 0px);
+  width: var(--tap-w, 96px);
+  height: var(--tap-h, 132px);
+  z-index: 15;
+  padding: 0;
+  border: 0;
+  border-radius: 16%;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.is-settled .secret { display: block; }
+
+/* 手がかりは残しつつ、ボタンには見せない */
+.secret:focus-visible {
+  outline: 1px solid rgba(240, 214, 156, 0.45);
+  outline-offset: 5px;
+}
+
+/* ------------------------------------------------------------
+   ひらいた先
+   ------------------------------------------------------------ */
+.portal {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 6vw;
+}
+
+.portal[hidden] { display: none; }
+
+.portal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 3, 7, 0.94);
+  opacity: 0;
+  animation: fade-in 1.2s ease 0.3s forwards;
+}
+
+/* ふれた紋章から、一度だけ光があふれる */
+.portal__flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--spot-x, 50vw) var(--spot-y, 50vh),
+      rgba(255, 248, 232, 0.92) 0%,
+      rgba(255, 226, 168, 0.55) 20%,
+      rgba(255, 206, 122, 0.12) 46%,
+      transparent 68%);
+  opacity: 0;
+  animation: flash 1.6s ease-out forwards;
+}
+
+@keyframes flash {
+  0%   { opacity: 0; }
+  8%   { opacity: 1; }
+  34%  { opacity: 0.62; }
+  100% { opacity: 0; }
+}
+
+/* その中心から、輪になって広がっていく */
+.portal__burst {
+  position: absolute;
+  left: var(--spot-x, 50vw);
+  top: var(--spot-y, 50vh);
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+      rgba(255, 252, 244, 1) 0%, rgba(255, 228, 164, 0.9) 26%, rgba(255, 198, 104, 0) 70%);
+  animation: burst 1.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes burst {
+  0%   { transform: scale(1);   opacity: 0; }
+  7%   { opacity: 1; }
+  52%  { opacity: 0.5; }
+  100% { transform: scale(170); opacity: 0; }
+}
+
+/* 道がひらいたら、手がかりはもう要らない */
+.is-portal .hint,
+.is-portal .halo { animation: none; opacity: 0; }
+.is-portal .secret { display: none; }
+
+.portal__word {
+  position: absolute;
+  left: 6%;
+  top: 23%;
+  width: 88%;
+  margin: 0;
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(11px, 3.4vw, 17px);
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+  color: rgba(244, 233, 208, 0.92);
+  text-shadow: 0 0 20px rgba(255, 204, 128, 0.45);
+  opacity: 0;
+  animation: word-in 2.4s var(--ease) 0.8s forwards;
+}
+
+@keyframes word-in {
+  0%   { opacity: 0; letter-spacing: 0.95em; filter: blur(7px); }
+  100% { opacity: 1; letter-spacing: 0.4em;  filter: blur(0); }
+}
+
+.portal__card {
+  position: relative;
+  width: min(84vw, 400px);
+  padding: 9% 8% 7%;
+  text-align: center;
+  background: linear-gradient(rgba(11, 14, 24, 0.94), rgba(6, 8, 14, 0.97));
+  border: 1px solid rgba(226, 198, 138, 0.36);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.8), inset 0 0 50px rgba(226, 198, 138, 0.05);
+  opacity: 0;
+  transform: translateY(20px);
+  animation: card-in 1.8s var(--ease) 2.2s forwards;
+}
+
+/* 内側にもう一本、細い線を引いて格を上げる */
+.portal__card::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(226, 198, 138, 0.16);
+  pointer-events: none;
+}
+
+@keyframes card-in { to { opacity: 1; transform: translateY(0); } }
+
+.portal__title {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(16px, 5vw, 24px);
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-indent: 0.15em;
+  line-height: 1.5;
+  color: #ecdcb2;
+  text-shadow: 0 0 18px rgba(226, 198, 138, 0.3);
+}
+
+.portal__body {
+  margin: 6% 0 0;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+  font-size: clamp(12px, 3.7vw, 16px);
+  letter-spacing: 0.1em;
+  line-height: 1.95;
+  color: rgba(226, 216, 196, 0.8);
+}
+
+.portal__go {
+  display: block;
+  margin: 9% 0 0;
+  padding: 4.6% 4%;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+  font-size: clamp(13px, 4.1vw, 17px);
+  letter-spacing: 0.12em;
+  text-indent: 0.12em;
+  text-decoration: none;
+  color: #f4e9cb;
+  background: linear-gradient(rgba(226, 198, 138, 0.12), rgba(226, 198, 138, 0.03));
+  border: 1px solid rgba(226, 198, 138, 0.5);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.35s ease, border-color 0.35s ease;
+}
+
+.portal__go:hover,
+.portal__go:focus-visible { background: rgba(226, 198, 138, 0.2); border-color: rgba(226, 198, 138, 0.8); }
+.portal__go:active        { background: rgba(226, 198, 138, 0.28); }
+
+.portal__back {
+  display: block;
+  margin: 5% auto 0;
+  padding: 2% 4%;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+  font-size: clamp(10px, 3.1vw, 13px);
+  letter-spacing: 0.14em;
+  color: rgba(214, 204, 186, 0.4);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.portal__back:hover { color: rgba(214, 204, 186, 0.7); }
+
+/* ============================================================
    流れ星
    空の上半分だけを、ときどき一筋だけ横切る。
    エンブレムや文字より奥にあるので、その裏を通り抜ける。
@@ -563,4 +844,17 @@ html, body {
   /* 入口は出さない。音は右下のボタンから入れてもらう */
   .js .gate { display: none; }
   .gate__img { animation: none; opacity: 0.95; }
+
+  /* 隠された入口は残す。動かさずに、その状態だけを出す
+     （.el の不透明度は上で 1 に戻してあるので、紋章は消えない） */
+  .is-lured .crest,
+  .veil, .halo, .hint,
+  .portal::before, .portal__word, .portal__card { animation: none !important; }
+  .is-lured .veil { opacity: 1; }
+  .is-lured .halo { opacity: 0.5; }
+  .is-lured .hint { opacity: 0.86; }
+  .portal::before { opacity: 1; }
+  .portal__burst { display: none; }
+  .portal__word  { opacity: 1; }
+  .portal__card  { opacity: 1; transform: none; }
 }

@@ -11,6 +11,15 @@
 (function () {
   'use strict';
 
+  /* ---------------------------------------------------------
+     設定
+
+     隠された入口の行き先。ここだけ書き換えれば、旅の書の場所を変えられる。
+     （index.html の a.portal__go にも同じものを入れてあるが、
+       読み込み時にここの値で上書きされる）
+     --------------------------------------------------------- */
+  var APP_URL = 'https://takiyaoffice.github.io/adventure/';
+
   var stage = document.getElementById('stage');
   var motes = document.getElementById('motes');
   if (!stage) { return; }
@@ -373,11 +382,119 @@
   });
 
   // ---------------------------------------------------------
+  // 隠された入口
+  //   落ち着いてしばらくすると、画面の光が 60TH へ吸い込まれていく。
+  //   紋章にふれると、旅の書への道がひらく。
+  //   一度見つけた人には、長い暗転を繰り返さない。
+  // ---------------------------------------------------------
+  var LURE      = { at: 7.0, dim: 16.0, hint: 8.0 };   // はじめて来た人
+  var LURE_BACK = { at: 2.0, dim: 5.5,  hint: 1.6 };   // 一度見つけた人
+  var PATH_STORE = 'ff-path';
+
+  var crest = document.querySelector('.crest');
+  var portal = document.getElementById('portal');
+  var secret = document.getElementById('secret');
+  var lureTimer = null;
+
+  function foundBefore() {
+    try { return localStorage.getItem(PATH_STORE) === '1'; } catch (e) { return false; }
+  }
+
+  /* 紋章の実寸を測り、スポットライト・触れる範囲・一言の位置を CSS へ渡す。
+     幕もこの一言も画面に貼り付けてあるので、枠の中の % では位置が出せない。 */
+  function syncSpot() {
+    if (!crest) { return; }
+    var r = crest.getBoundingClientRect();
+    if (!r.width) { return; }
+
+    var css = document.documentElement.style;
+    css.setProperty('--spot-x', (r.left + r.width / 2).toFixed(1) + 'px');
+    css.setProperty('--spot-y', (r.top + r.height / 2).toFixed(1) + 'px');
+    css.setProperty('--spot-r', (r.width * 2.15).toFixed(1) + 'px');
+
+    // 触れる範囲は、見た目より一回り広くとる（指で狙いやすいように）
+    var padX = r.width * 0.42;
+    var padY = r.height * 0.3;
+    css.setProperty('--tap-x', (r.left - padX).toFixed(1) + 'px');
+    css.setProperty('--tap-y', (r.top - padY).toFixed(1) + 'px');
+    css.setProperty('--tap-w', (r.width + padX * 2).toFixed(1) + 'px');
+    css.setProperty('--tap-h', (r.height + padY * 2).toFixed(1) + 'px');
+
+    // 一言は紋章のすぐ横、まだ何も描かれていない空のところへ。
+    // 明るいところから暗がりへ流れ込むように置く
+    var hx = r.right + r.width * 0.18;
+    css.setProperty('--hint-x', hx.toFixed(1) + 'px');
+    css.setProperty('--hint-y', (r.top + r.height * 0.26).toFixed(1) + 'px');
+    css.setProperty('--hint-w', Math.max(120, window.innerWidth - hx - 12).toFixed(1) + 'px');
+  }
+
+  function startLure() {
+    var L = foundBefore() ? LURE_BACK : LURE;
+    syncSpot();
+
+    var css = document.documentElement.style;
+    css.setProperty('--dim', L.dim + 's');
+    css.setProperty('--hint-at', L.hint + 's');
+
+    clearTimeout(lureTimer);
+    lureTimer = setTimeout(function () {
+      syncSpot();
+      document.body.classList.add('is-lured');
+    }, L.at * 1000);
+  }
+
+  function openPortal() {
+    if (!portal || !portal.hidden) { return; }
+    try { localStorage.setItem(PATH_STORE, '1'); } catch (e) { /* 覚えられなくても困らない */ }
+
+    syncSpot();                       // 光は紋章のあった場所から広がる
+    portal.hidden = false;
+    document.body.classList.add('is-portal');
+
+    // 道がひらいたあとに、その先へ手が届くようにする
+    setTimeout(function () {
+      var go = document.getElementById('portalGo');
+      if (go && !portal.hidden) { go.focus(); }
+    }, 4000);
+  }
+
+  function closePortal() {
+    if (!portal || portal.hidden) { return; }
+    portal.hidden = true;
+    document.body.classList.remove('is-portal');
+    if (secret) { secret.focus(); }
+  }
+
+  if (portal) {
+    var go = document.getElementById('portalGo');
+    if (go) { go.href = APP_URL; }          // 行き先は APP_URL ひとつで決まる
+
+    if (secret) { secret.addEventListener('click', openPortal); }
+
+    var back = document.getElementById('portalBack');
+    if (back) { back.addEventListener('click', closePortal); }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { closePortal(); }
+    });
+  }
+
+  window.addEventListener('resize', syncSpot, { passive: true });
+  window.addEventListener('orientationchange', function () {
+    setTimeout(syncSpot, 260);
+  }, { passive: true });
+
+  // ---------------------------------------------------------
   // 進行
   // ---------------------------------------------------------
   function run() {
     if (reduceMotion) {
       document.body.classList.add('is-settled');
+      // 動きは出さないが、隠された入口はそのまま残す
+      requestAnimationFrame(function () {
+        syncSpot();
+        document.body.classList.add('is-lured');
+      });
       return;
     }
     schedule();
@@ -392,6 +509,7 @@
         setTimeout(startStars, SETTLE_AT * 1000);
         setTimeout(function () {
           document.body.classList.add('is-settled');
+          startLure();                              // ここから光が紋章へ集まりはじめる
         }, SETTLE_AT * 1000);
       });
     });

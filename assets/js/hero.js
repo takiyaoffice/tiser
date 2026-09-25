@@ -387,8 +387,8 @@
   //   紋章にふれると、旅の書への道がひらく。
   //   一度見つけた人には、長い暗転を繰り返さない。
   // ---------------------------------------------------------
-  var LURE      = { at: 7.0, dim: 16.0 };   // はじめて来た人
-  var LURE_BACK = { at: 2.0, dim: 5.5 };    // 一度見つけた人
+  var LURE      = { at: 7.0, dim: 16.0, hint: 8.0 };   // はじめて来た人
+  var LURE_BACK = { at: 2.0, dim: 5.5,  hint: 1.6 };   // 一度見つけた人
   var PATH_STORE = 'ff-path';
 
   var crest = document.querySelector('.crest');
@@ -400,8 +400,8 @@
     try { return localStorage.getItem(PATH_STORE) === '1'; } catch (e) { return false; }
   }
 
-  /* 紋章の実寸を測り、スポットライトと触れる範囲の位置を CSS へ渡す。
-     幕も触れる場所も画面に貼り付けてあるので、枠の中の % では位置が出せない。 */
+  /* 紋章の実寸を測り、スポットライト・触れる範囲・一言の位置を CSS へ渡す。
+     幕もこの一言も画面に貼り付けてあるので、枠の中の % では位置が出せない。 */
   function syncSpot() {
     if (!crest) { return; }
     var r = crest.getBoundingClientRect();
@@ -419,6 +419,13 @@
     css.setProperty('--tap-y', (r.top - padY).toFixed(1) + 'px');
     css.setProperty('--tap-w', (r.width + padX * 2).toFixed(1) + 'px');
     css.setProperty('--tap-h', (r.height + padY * 2).toFixed(1) + 'px');
+
+    // 一言は紋章のすぐ横、まだ何も描かれていない空のところへ。
+    // 明るいところから暗がりへ流れ込むように置く
+    var hx = r.right + r.width * 0.18;
+    css.setProperty('--hint-x', hx.toFixed(1) + 'px');
+    css.setProperty('--hint-y', (r.top + r.height * 0.26).toFixed(1) + 'px');
+    css.setProperty('--hint-w', Math.max(120, window.innerWidth - hx - 12).toFixed(1) + 'px');
   }
 
   function startLure() {
@@ -427,6 +434,7 @@
 
     var css = document.documentElement.style;
     css.setProperty('--dim', L.dim + 's');
+    css.setProperty('--hint-at', L.hint + 's');
 
     clearTimeout(lureTimer);
     lureTimer = setTimeout(function () {

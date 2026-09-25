@@ -439,7 +439,7 @@ html, body {
 
    落ち着いてしばらくすると、画面の光が 60TH へ吸い込まれていく。
    真っ暗にはせず、紋章のまわりだけを残す。
-   位置は JS が紋章の実寸から測り、--spot-* と --tap-* に書き込む。
+   位置は JS が紋章の実寸から測り、--spot-* / --tap-* / --hint-* に書き込む。
    ============================================================ */
 .veil {
   position: fixed;
@@ -490,6 +490,33 @@ html, body {
   0%, 100% { opacity: 1; transform: scale(1);     filter: brightness(1); }
   50%      { opacity: 1; transform: scale(1.035); filter: brightness(1.13); }
 }
+
+/* 暗くなりきるころ、紋章のわきに置かれる一言 */
+.hint {
+  position: fixed;
+  left: var(--hint-x, 5vw);
+  top: var(--hint-y, 22vh);
+  width: var(--hint-w, 62vw);
+  margin: 0;
+  z-index: 14;
+  pointer-events: none;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
+  font-size: clamp(11px, 3.3vw, 16px);
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  line-height: 1.9;
+  color: rgba(240, 228, 200, 0.92);
+  text-shadow: 0 0 14px rgba(255, 208, 132, 0.4), 0 1px 4px rgba(0, 0, 0, 0.95);
+  opacity: 0;
+}
+
+.is-lured .hint {
+  animation: hint-in 4.6s var(--ease) var(--hint-at, 8s) forwards,
+             hint-breath 7s ease-in-out calc(var(--hint-at, 8s) + 4.6s) infinite;
+}
+
+@keyframes hint-in     { to { opacity: 0.86; } }
+@keyframes hint-breath { 0%, 100% { opacity: 0.86; } 50% { opacity: 0.52; } }
 
 /* 触れる場所。見た目は持たず、紋章より一回り広くとってある */
 .secret {
@@ -581,6 +608,7 @@ html, body {
 }
 
 /* 道がひらいたら、手がかりはもう要らない */
+.is-portal .hint,
 .is-portal .halo { animation: none; opacity: 0; }
 .is-portal .secret { display: none; }
 
@@ -820,10 +848,11 @@ html, body {
   /* 隠された入口は残す。動かさずに、その状態だけを出す
      （.el の不透明度は上で 1 に戻してあるので、紋章は消えない） */
   .is-lured .crest,
-  .veil, .halo,
+  .veil, .halo, .hint,
   .portal::before, .portal__word, .portal__card { animation: none !important; }
   .is-lured .veil { opacity: 1; }
   .is-lured .halo { opacity: 0.5; }
+  .is-lured .hint { opacity: 0.86; }
   .portal::before { opacity: 1; }
   .portal__burst { display: none; }
   .portal__word  { opacity: 1; }

@@ -14,6 +14,13 @@
 
   --ratio: 0.4713;           /* 861 / 1827。背景の絵そのものの比率 */
 
+  /* 絵を置く位置と大きさ。枠（.stage）と、画面の外に続く根っこの背景の
+     両方が同じ値を使うので、継ぎ目なくつながる */
+  --w: max(100vw, calc(var(--full-h) * var(--ratio)));
+  --h: calc(var(--w) / var(--ratio));
+  --sx: calc((100vw - var(--w)) / 2);
+  --sy: max(calc((var(--full-h) - var(--h)) * 0.4), calc(var(--h) * -0.04));
+
   /* 演出のイージング。ゆっくり着地させる */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -32,6 +39,32 @@ html, body {
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* ------------------------------------------------------------
+   画面の外まで絵を続ける
+
+   アプリ内ブラウザのように、ステータスバーや下のツールバーが
+   居座る端末では、その裏は CSS のビューポートの外になる。
+   そこへ届くのは根っこ（html）の背景だけなので、枠とまったく同じ
+   位置・大きさで絵を敷いておく。継ぎ目なくつながり、
+   画面の暗いところが無くなる。
+
+   絵が出るまでは黒のまま。背景が現れるのに合わせて敷く。
+   ------------------------------------------------------------ */
+html.lit {
+  background-color: #0b0906;          /* 絵の下端の色。届かない数 px をなじませる */
+  background-image: url("../img/hero/scene.webp");
+  background-repeat: no-repeat;
+  background-size: var(--w) var(--h);
+  background-position: var(--sx) var(--sy);
+}
+
+html.lit body { background: none; }   /* 根っこの背景を覆い隠さない */
+
+/* 横長の画面は絵を全体表示にするので、この続きは要らない */
+@media (min-aspect-ratio: 5/8) {
+  html.lit { background-image: none; background-color: var(--ink); }
 }
 
 .sr-only {
@@ -71,14 +104,11 @@ html, body {
    削るのは上から最大 4%（ただの空。紋章は 6.14% から始まるので残る）、
    残りは下の岩場から。二人と猫はどちらの端にも掛からない。 */
 .stage {
-  --w: max(100vw, calc(var(--full-h) * var(--ratio)));
-
   position: absolute;
-  left: calc((100vw - var(--w)) / 2);
-  top: max(calc((var(--full-h) - var(--w) / var(--ratio)) * 0.4),
-           calc(var(--w) / var(--ratio) * -0.04));
+  left: var(--sx);
+  top: var(--sy);
   width: var(--w);
-  height: calc(var(--w) / var(--ratio));
+  height: var(--h);
   overflow: hidden;
   isolation: isolate;
   background: var(--ink);

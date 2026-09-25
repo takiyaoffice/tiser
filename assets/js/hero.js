@@ -473,6 +473,7 @@
   function run() {
     if (reduceMotion) {
       document.body.classList.add('is-settled');
+      document.documentElement.classList.add('lit');
       // 動きは出さないが、隠された入口はそのまま残す
       requestAnimationFrame(function () {
         syncSpot();
@@ -487,6 +488,12 @@
         document.body.classList.add('is-playing');
         window.__heroStart = performance.now();     // 表示確認用
         window.__star = shootingStar;               // 表示確認用
+
+        // 画面の外（ステータスバーや下のツールバーの裏）にも絵を続ける。
+        // 背景が現れるのに合わせて敷く
+        setTimeout(function () {
+          document.documentElement.classList.add('lit');
+        }, AUDIO_AT * 1000);
 
         setTimeout(startMotes, MOTES_AT * 1000);
         setTimeout(startStars, SETTLE_AT * 1000);

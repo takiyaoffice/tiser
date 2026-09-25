@@ -387,8 +387,8 @@
   //   紋章にふれると、旅の書への道がひらく。
   //   一度見つけた人には、長い暗転を繰り返さない。
   // ---------------------------------------------------------
-  var LURE      = { at: 4.0, dim: 9.0, hint: 4.5 };   // はじめて来た人
-  var LURE_BACK = { at: 1.5, dim: 4.0, hint: 1.2 };   // 一度見つけた人
+  var LURE      = { at: 4.0, dim: 9.0, hint: 7.6 };   // はじめて来た人
+  var LURE_BACK = { at: 1.5, dim: 4.0, hint: 3.4 };   // 一度見つけた人
   var PATH_STORE = 'ff-path';
 
   var crest = document.querySelector('.crest');

@@ -385,20 +385,17 @@
   // 隠された入口
   //   落ち着いてしばらくすると、画面の光が 60TH へ吸い込まれていく。
   //   紋章にふれると、旅の書への道がひらく。
-  //   一度見つけた人には、長い暗転を繰り返さない。
   // ---------------------------------------------------------
-  var LURE      = { at: 4.0, dim: 9.0, hint: 7.6 };   // はじめて来た人
-  var LURE_BACK = { at: 1.5, dim: 4.0, hint: 3.4 };   // 一度見つけた人
-  var PATH_STORE = 'ff-path';
+  var LURE = {
+    at: 1.5,      // 落ち着いてから、暗くなりはじめるまで
+    dim: 4.0,     // 暗くなりきるまで
+    hint: 3.4     // 暗くなりはじめてから、一言が出るまで
+  };
 
   var crest = document.querySelector('.crest');
   var portal = document.getElementById('portal');
   var secret = document.getElementById('secret');
   var lureTimer = null;
-
-  function foundBefore() {
-    try { return localStorage.getItem(PATH_STORE) === '1'; } catch (e) { return false; }
-  }
 
   /* 紋章の実寸を測り、スポットライト・触れる範囲・一言の位置を CSS へ渡す。
      幕もこの一言も画面に貼り付けてあるので、枠の中の % では位置が出せない。 */
@@ -429,23 +426,21 @@
   }
 
   function startLure() {
-    var L = foundBefore() ? LURE_BACK : LURE;
     syncSpot();
 
     var css = document.documentElement.style;
-    css.setProperty('--dim', L.dim + 's');
-    css.setProperty('--hint-at', L.hint + 's');
+    css.setProperty('--dim', LURE.dim + 's');
+    css.setProperty('--hint-at', LURE.hint + 's');
 
     clearTimeout(lureTimer);
     lureTimer = setTimeout(function () {
       syncSpot();
       document.body.classList.add('is-lured');
-    }, L.at * 1000);
+    }, LURE.at * 1000);
   }
 
   function openPortal() {
     if (!portal || !portal.hidden) { return; }
-    try { localStorage.setItem(PATH_STORE, '1'); } catch (e) { /* 覚えられなくても困らない */ }
 
     syncSpot();                       // 光は紋章のあった場所から広がる
     portal.hidden = false;

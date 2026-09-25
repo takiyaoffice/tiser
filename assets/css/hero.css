@@ -64,20 +64,36 @@ html, body {
   height: var(--full-h);       /* URL 欄の下まで敷く */
   overflow: hidden;
   z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-/* 絵の全体が画面に入るように収める。どの辺も切らない。
-   端末の比率が絵とほぼ同じなので、ふだんは画面いっぱいに見える */
+/* 縦長の画面（スマホ）。画面いっぱいに敷き、余白を作らない。
+   絵は引き伸ばさず、はみ出した分だけを削る。
+   削るのは上から最大 4%（ただの空。紋章は 6.14% から始まるので残る）、
+   残りは下の岩場から。二人と猫はどちらの端にも掛からない。 */
 .stage {
-  position: relative;
-  width: min(100vw, calc(var(--full-h) * var(--ratio)));
-  height: min(calc(100vw / var(--ratio)), var(--full-h));
+  --w: max(100vw, calc(var(--full-h) * var(--ratio)));
+
+  position: absolute;
+  left: calc((100vw - var(--w)) / 2);
+  top: max(calc((var(--full-h) - var(--w) / var(--ratio)) * 0.4),
+           calc(var(--w) / var(--ratio) * -0.04));
+  width: var(--w);
+  height: calc(var(--w) / var(--ratio));
   overflow: hidden;
   isolation: isolate;
   background: var(--ink);
+}
+
+/* 横長の画面（タブレットや PC）では、削ると絵が残らないので全体を収める。
+   余白は背面にぼかした同じ絵を敷いて埋める */
+@media (min-aspect-ratio: 5/8) {
+  .stage {
+    left: 50%;
+    top: 50%;
+    width: min(100vw, calc(var(--full-h) * var(--ratio)));
+    height: min(calc(100vw / var(--ratio)), var(--full-h));
+    transform: translate(-50%, -50%);
+  }
 }
 
 /* ============================================================

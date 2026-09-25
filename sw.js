@@ -1,7 +1,7 @@
 /* 仙台への冒険 ティザー ─ オフラインでも起動画面として成立させるための最小構成 */
 'use strict';
 
-var CACHE = 'future-fantasy-v7';
+var CACHE = 'future-fantasy-v8';
 
 var ASSETS = [
   './',

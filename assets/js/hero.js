@@ -50,18 +50,6 @@
   var SETTLE_AT = last.at + last.for + 0.2;
 
   // ---------------------------------------------------------
-  // 画面高さ（iOS のアドレスバー分を含む実寸）を CSS に渡す
-  // ---------------------------------------------------------
-  function syncViewport() {
-    document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px');
-  }
-  syncViewport();
-  window.addEventListener('resize', syncViewport, { passive: true });
-  window.addEventListener('orientationchange', function () {
-    setTimeout(syncViewport, 240);
-  }, { passive: true });
-
-  // ---------------------------------------------------------
   // 段取りを CSS 変数として各要素に書き込む
   // ---------------------------------------------------------
   function schedule() {

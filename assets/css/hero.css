@@ -8,15 +8,17 @@
 :root {
   --ink: #05070c;
   --gold: #e7c98a;
-  --app-h: 100vh;
+  /* URL 欄の下まで含めた、画面いっぱいの高さ。
+     dvh と違い、アドレスバーの出入りで縮まない */
+  --full-h: 100vh;
 
-  --ratio: 0.4626;           /* 853 / 1844 */
+  --ratio: 0.4713;           /* 861 / 1827。背景の絵そのものの比率 */
 
   /* 演出のイージング。ゆっくり着地させる */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@supports (height: 100dvh) { :root { --app-h: 100dvh; } }
+@supports (height: 100lvh) { :root { --full-h: 100lvh; } }
 
 * { box-sizing: border-box; }
 
@@ -56,36 +58,26 @@ html, body {
 
 .viewport {
   position: fixed;
-  inset: 0;
-  overflow: hidden;
-  z-index: 1;
-}
-
-/* 画面の幅いっぱいに置く。縦は絵の比率のまま伸び、
-   はみ出した分は下から切れる（文字は必ず全部入る） */
-.stage {
-  position: absolute;
   top: 0;
   left: 0;
   width: 100vw;
-  height: calc(100vw / var(--ratio));
+  height: var(--full-h);       /* URL 欄の下まで敷く */
+  overflow: hidden;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 絵の全体が画面に入るように収める。どの辺も切らない。
+   端末の比率が絵とほぼ同じなので、ふだんは画面いっぱいに見える */
+.stage {
+  position: relative;
+  width: min(100vw, calc(var(--full-h) * var(--ratio)));
+  height: min(calc(100vw / var(--ratio)), var(--full-h));
   overflow: hidden;
   isolation: isolate;
   background: var(--ink);
-}
-
-/* 横長の画面（タブレットや PC）では、絵の全体が入るように収める */
-@media (min-aspect-ratio: 5/8) {
-  .viewport {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .stage {
-    position: relative;
-    width: min(100vw, calc(var(--app-h) * var(--ratio)));
-    height: min(calc(100vw / var(--ratio)), var(--app-h));
-  }
 }
 
 /* ============================================================
@@ -136,7 +128,7 @@ html, body {
 
 /* 地平線の夕日。ゆっくり明るさが変わる */
 .scene__sun {
-  background: radial-gradient(22% 9% at 93.5% 60.5%,
+  background: radial-gradient(22% 9% at 90.9% 51.2%,
       rgba(255, 214, 148, 0.26), rgba(255, 176, 92, 0.10) 45%, transparent 76%);
   mix-blend-mode: screen;
   animation: sun-breath 23s ease-in-out infinite;
@@ -273,7 +265,10 @@ html, body {
 .gate {
   display: none;
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: var(--full-h);
   z-index: 40;
   background: var(--ink, #05070c);
   place-items: center;
@@ -443,7 +438,10 @@ html, body {
    ============================================================ */
 .veil {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: var(--full-h);
   z-index: 12;
   pointer-events: none;                 /* 見るだけの幕。操作は妨げない */
   opacity: 0;
@@ -548,7 +546,10 @@ html, body {
    ------------------------------------------------------------ */
 .portal {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: var(--full-h);
   z-index: 45;
   display: grid;
   place-items: center;
